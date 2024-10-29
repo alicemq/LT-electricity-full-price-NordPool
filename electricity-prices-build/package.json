@@ -17,6 +17,7 @@
     "jquery": "^3.7.1",
     "lessc": "^1.0.2",
     "moment-timezone": "^0.5.46",
+    "openmeteo": "^1.1.4",
     "pinia": "^2.2.4",
     "vue": "^3.5.12",
     "vue-router": "^4.4.5"

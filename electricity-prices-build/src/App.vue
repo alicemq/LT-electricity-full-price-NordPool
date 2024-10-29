@@ -2,32 +2,43 @@
 import { RouterLink, RouterView } from 'vue-router'
 import axios from "axios";
 import moment from 'moment-timezone';
-import { useStorage, useMouse, usePreferredDark, containsProp } from '@vueuse/core'
-// import { stringify } from '@vueuse/docs-utils'
+import { useStorage, useGeolocation } from '@vueuse/core'
+import { fetchWeatherApi } from 'openmeteo';
 
 import { ref, computed, onMounted, onActivated, onBeforeUpdate, watch } from 'vue'
+
+moment.tz.setDefault("Europe/Vilnius");
 
 //default storage
 const theDefault = {
   zone: "Four zones",
   plan: "Smart",
-  vendorMargin: '0',
-  VIAP: '0',
-  distributionplus: "0.00054"
+  vendorMargin: '0.02003',
+  VIAP: 0,
+  distributionplus: "0.00054",
+  PVMIncluded: true
 }
 const state = useStorage('elecsettings', theDefault)
-// let date = ref(new Date());
-// let minDate, currentDate, lastDay, nextDay, apiUrl, priceData, data,datax, response = ''
+
+//check default plan
+
+if (state.value.zone === "Four zones") {
+  state.value.plan = "Smart"
+} else {
+  if (state.value.zone != "Four zones" && state.value.plan === "Smart") {
+    state.value.plan = "Standart"
+  }
+}
+
+
 let date = ref(new Date());
+// console.log(date)
 const minDate = ref(new Date("2012-07-01"))
-let currentDate = moment(date).tz("Europe/Vilnius").format('YYYY-MM-DD').toString()
+let currentDate = moment(date).format('YYYY-MM-DD').toString()
 
-// currentDate="2012-07-01"
-let lastDay = moment(currentDate).subtract(1, 'days').tz("Europe/Vilnius").format('YYYY-MM-DD')
-let nextDay = moment().add(1, 'days').tz("Europe/Vilnius").format('YYYY-MM-DD')
-let apiUrl = 'https://dashboard.elering.ee/api/nps/price?start=' + lastDay + 'T21%3A00%3A00.999Z&end=' + currentDate + 'T20%3A59%3A59.999Z'
-
-
+let lastDay = moment(currentDate).subtract(1, 'days').format('YYYY-MM-DD')
+let nextDay = moment().add(1, 'days').format('YYYY-MM-DD')
+// let apiUrl = 'https://dashboard.elering.ee/api/nps/price?start=' + lastDay + 'T21%3A00%3A00.999Z&end=' + currentDate + 'T20%3A59%3A59.999Z'
 
 async function getData(url) {
   let response = await axios.get(url)
@@ -36,13 +47,13 @@ async function getData(url) {
   return data
 }
 
+// weather location data
+
+
+
+
 
 let priceData = ref([])
-
-// onMounted(async () => {
-//   let data = await getData(apiUrl)
-//   priceData.value = data.data
-// })
 
 let countries = [
   { name: "Estonia", value: "ee" },
@@ -177,18 +188,15 @@ watch(state.value, async (newValue, oldValue) => {
 
 // get data from distribution list
 function getDistributionPrice(time) {
-  // let newDate = new Date(moment.unix(time).tz("Europe/Vilnius"))
-  let newDate = new moment(time).tz("Europe/Vilnius")
+  let initDate = new Date(time * 1000)
+  let newDate = new moment(initDate)
   let weekend = [0, 6].includes(newDate.day()) === false ? 'mondayToFriday' : 'weekend'
   let hour = moment(newDate).hour()
   let daylightSaving = (moment(time)).isDST() === false ? "wintertime" : "summertime"
   let zone = timeZones[state.value.zone]
   let plan = zone.values.tariffs[state.value.plan]
   let timetable = ''
-  // let timetableDayTime = ''
-  // let dayTime = ''
 
-  //get timetable
   switch (zone.name) {
     case "Four zones":
       timetable = zone.values.hours['alltime'][weekend]
@@ -201,32 +209,86 @@ function getDistributionPrice(time) {
       break
   }
   let timetableDayTime = timetable[hour]
-  // let dayTimePrice = plan.dayTime[timetableDayTime]
+  let finalPrice = plan['dayTime'][timetableDayTime]
+  // console.log("weekend: " + weekend)
+  // console.log("initDate : " + initDate)
+  // console.log("date: " + newDate)
+  // console.log("hour: " + hour)
+  // console.log("daylight saving: " + daylightSaving)
+  // console.log("timetable: " + timetableDayTime)
+  // console.log("distro price: " + finalPrice)
 
+  return finalPrice
 
-  return plan['dayTime'][timetableDayTime]
 }
-
-
-
+// on calendar and on load reload price data
 watch(date, async (newValue, oldValue) => {
   let date = newValue;
-  const minDate = ref(new Date("2012-07-01"))
-  let currentDate = moment(date).tz("Europe/Vilnius").format('YYYY-MM-DD').toString()
-
-  // currentDate="2012-07-01"
-  let lastDay = moment(currentDate).subtract(1, 'days').tz("Europe/Vilnius").format('YYYY-MM-DD')
-  let nextDay = moment().add(1, 'days').tz("Europe/Vilnius").format('YYYY-MM-DD')
-  let apiUrl = 'https://dashboard.elering.ee/api/nps/price?start=' + lastDay + 'T21%3A00%3A00.999Z&end=' + currentDate + 'T20%3A59%3A59.999Z'
-
-
+  let currentDate = moment(date).format('YYYY-MM-DD').toString()
+  let lastDay = moment(currentDate).subtract(1, 'days').format('YYYY-MM-DD')
   // console.log(date)
-  // console.log(apiUrl)
+  let lastDayHour = lastDay.isDST ? 21 : 22
+  let currentDayHour = currentDate.isDST ? 20 : 21
+  let nextDay = moment().add(1, 'days').format('YYYY-MM-DD')
+  let apiUrl = 'https://dashboard.elering.ee/api/nps/price?start=' + lastDay + 'T'+lastDayHour+'%3A00%3A00.999Z&end=' + currentDate + 'T'+currentDayHour+'%3A59%3A59.999Z'
   let data = await getData(apiUrl)
   priceData.value = data.data
-  // console.log('update calendar done')
-}, { immediate: true })
+},
+  { immediate: true }
+)
 
+function countPrice(price) {
+  let VAT = 1
+  switch (state.value.PVMIncluded === true) {
+    case true:
+      VAT = 1
+      break
+    case false:
+      VAT = 1.21
+  }
+
+  // console.log(parseFloat(state.value.VIAP))
+  return (Math.round(((((parseFloat(price.price) / 1000 * 1.21) + (parseFloat(state.value.VIAP) + parseFloat(state.value.vendorMargin) +
+    parseFloat(state.value.distributionplus) + getDistributionPrice(price.timestamp))) * 100) / VAT) * 100) / 100)
+}
+
+// onMounted(async () => {
+//   let data = await getData(apiUrl)
+//   priceData.value = data.data
+
+// })
+
+function priceHours(time, addHours) {
+  let initDate = new Date(time * 1000)
+  let newDate = new moment(initDate)
+  let hour = newDate.add(0, 'hour').format('HH')
+  let minute = newDate.add(0, 'hour').format('mm')
+  let nextHour = newDate.add(addHours, 'hour').format('HH')
+  let nextMinute = newDate.add(addHours, 'hour').format('mm')
+  let timeString = hour + '<sup>' + minute + '</sup> - ' + nextHour + '<sup>' + nextMinute + '</sup>'
+  return timeString
+}
+
+function markCurrentHour(time){
+  let thisdate = new Date();
+  let currDate = moment(thisdate).format('YYYY-MM-DD').toString()
+  let priceDate = moment(time*1000).format('YYYY-MM-DD').toString()
+  let priceHour = moment(time*1000).hour()
+  let currentHour = moment(thisdate).hour()
+  let colorRow = ""
+ if(currDate === priceDate) {
+  //get current hour and compare
+  colorRow = (priceHour === currentHour ? "table-primary" : "")
+ }
+//  console.log(colorRow)
+//  console.log(currDate)
+//  console.log(currentHour)
+//  console.log(priceDate)
+//  console.log(priceHour)
+//  console.log("price date and hour: " + moment(time*1000).format('YYYY-MM-DD HH:mm'))
+
+ return colorRow
+}
 
 </script>
 
@@ -234,24 +296,22 @@ watch(date, async (newValue, oldValue) => {
   <VueDatePicker v-model="date" locale="lt" month-name-format="long" format="yyyy-MM-dd" auto-apply reverse-years
     :enable-time-picker="false" :max-date="nextDay" :min-date="minDate" prevent-min-max-navigation />
 
-  <table class="table table-hover">
-    <thead>
+  <table class="table table-hover table-striped table-sm">
+    <thead class="table-dark">
       <tr>
         <th scope="col" class="header">Hour</th>
         <th scope="col" class="header">Price ct/kWh</th>
       </tr>
     </thead>
-    <tbody>
+    <tbody class="table-group-divider">
       <tr v-for="prices in priceData.lt">
-        <td>{{ moment.unix(prices.timestamp).tz("Europe/Vilnius").format('HH:mm') }} - {{
-          moment.unix(prices.timestamp).add(1, 'hour').tz("Europe/Vilnius").format('HH:mm') }}</td>
-        <td>{{ (((prices.price / 1000 * 1.21) + (state.VIAP + state.vendorMargin +
-          state.distributionplus + getDistributionPrice(prices.timestamp))) * 100).toFixed(4) }} ct €</td>
+        <td v-html="priceHours(prices.timestamp, 1)" v-bind:class="markCurrentHour(prices.timestamp)"></td>
+        <td v-bind:class="markCurrentHour(prices.timestamp)">{{ countPrice(prices) }}</td>
       </tr>
 
     </tbody>
   </table>
-
+  <p>ESO time zone and plan</p>
   <div class="input-group mb-3">
     <div class="form-check" v-for="zone in timeZones">
       <input class="form-check-input" type="radio" :id="zone.id" :value="zone.name" v-model="state.zone">
@@ -261,7 +321,6 @@ watch(date, async (newValue, oldValue) => {
     </div>
   </div>
   <div>
-    Available plans:
 
     <div class="input-group mb-3">
       <div class="form-check" v-for="plan in timeZones[state.zone].values.tariffs">
@@ -273,23 +332,36 @@ watch(date, async (newValue, oldValue) => {
         </label>
       </div>
     </div>
+
+    <div class="form-check">
+      <input class="form-check-input" type="radio" name="PVMIncludedYes" :id="state.PVMIncluded"
+        v-model="state.PVMIncluded" :value="true" :checked="state.PVMIncluded === true" />
+      <label class="form-check-label" :for="state.PVMIncluded"> With VAT</label>
+    </div>
+    <div class="form-check">
+      <input class="form-check-input" type="radio" name="PVMIncludedNo" :id="state.PVMIncluded"
+        v-model="state.PVMIncluded" :value="false" :checked="state.PVMIncluded === false" />
+      <label class="form-check-label" :for="state.PVMIncluded"> No VAT</label>
+    </div>
+
+
     <div class="mb-3">
       <label for="venmar" class="form-label">Vendor margin</label>
-      <input type="number" class="form-control" name="vendorMargin" id="venmar" aria-describedby="helpId"
+      <input type="number" step="0.0001" class="form-control" name="vendorMargin" id="venmar" aria-describedby="helpId"
         :placeholder="state.vendorMargin" v-model="state.vendorMargin" />
-      <small id="helpId" class="form-text text-muted">Enter vendor margin</small>
+      <small id="helpId" class="form-text text-muted">Enter vendor margin in € </small>
     </div>
     <div class="mb-3">
-      <label for="VIAP" class="form-label">VIAP</label>
+      <label for="VIAP" step="0.0001" class="form-label">VIAP</label>
       <input type="number" class="form-control" name="VIAP" id="VIAP" aria-describedby="helpId"
         :placeholder="state.VIAP" v-model="state.VIAP" />
-      <small id="helpId" class="form-text text-muted">Enter VIAP price</small>
+      <small id="helpId" class="form-text text-muted">Enter VIAP price in € </small>
     </div>
     <div class="mb-3">
       <label for="distributionplus" class="form-label">National distribution margin</label>
-      <input type="number" class="form-control" name="distributionplus" id="distributionplus" aria-describedby="helpId"
-        :placeholder="state.distributionplus" v-model="state.distributionplus" />
-      <small id="helpId" class="form-text text-muted">Enter national distribution margin</small>
+      <input type="number" step="0.0001" class="form-control" name="distributionplus" id="distributionplus"
+        aria-describedby="helpId" :placeholder="state.distributionplus" v-model="state.distributionplus" />
+      <small id="helpId" class="form-text text-muted">Enter national distribution margin in € </small>
     </div>
   </div>
 
