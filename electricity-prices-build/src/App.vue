@@ -9,6 +9,19 @@ import { ref, computed, onMounted, onActivated, onBeforeUpdate, watch } from 'vu
 
 moment.tz.setDefault("Europe/Vilnius");
 
+// holiday dates, used in Four zones plan as weekend
+const holidayDates = ["01-01",
+  "02-16",
+  "03-11",
+  "05-01",
+  "06-24",
+  "07-06",
+  "08-15",
+  "11-01",
+  "12-24",
+  "12-25",
+  "12-26"]
+
 //default storage
 const theDefault = {
   zone: "Four zones",
@@ -21,7 +34,6 @@ const theDefault = {
 const state = useStorage('elecsettings', theDefault)
 
 //check default plan
-
 if (state.value.zone === "Four zones") {
   state.value.plan = "Smart"
 } else {
@@ -191,6 +203,8 @@ function getDistributionPrice(time) {
   let initDate = new Date(time * 1000)
   let newDate = new moment(initDate)
   let weekend = [0, 6].includes(newDate.day()) === false ? 'mondayToFriday' : 'weekend'
+  weekend = holidayDates.includes(newDate.format('MM-DD')) ? weekend = 'weekend' : weekend
+  // console.log(holidayDates.includes(newDate.format('MM-DD')))
   let hour = moment(newDate).hour()
   let daylightSaving = (moment(time)).isDST() === false ? "wintertime" : "summertime"
   let zone = timeZones[state.value.zone]
@@ -224,15 +238,18 @@ function getDistributionPrice(time) {
 // on calendar and on load reload price data
 watch(date, async (newValue, oldValue) => {
   let date = newValue;
-  let currentDate = moment(date).format('YYYY-MM-DD').toString()
-  let lastDay = moment(currentDate).subtract(1, 'days').format('YYYY-MM-DD')
+  let currentDateInit = moment(date)
+  let currentDate = currentDateInit.format('YYYY-MM-DD').toString()
+  let lastDayInit = moment(currentDate).subtract(1, 'days')
+  let lastDay = lastDayInit.format('YYYY-MM-DD')
   // console.log(date)
-  let lastDayHour = lastDay.isDST ? 21 : 22
-  let currentDayHour = currentDate.isDST ? 20 : 21
+  let lastDayHour = lastDayInit.isDST() ? 21 : 22
+  let currentDayHour = currentDateInit.isDST() ? 20 : 21
   let nextDay = moment().add(1, 'days').format('YYYY-MM-DD')
-  let apiUrl = 'https://dashboard.elering.ee/api/nps/price?start=' + lastDay + 'T'+lastDayHour+'%3A00%3A00.999Z&end=' + currentDate + 'T'+currentDayHour+'%3A59%3A59.999Z'
+  let apiUrl = 'https://dashboard.elering.ee/api/nps/price?start=' + lastDay + 'T' + lastDayHour + '%3A00%3A00.999Z&end=' + currentDate + 'T' + currentDayHour + '%3A59%3A59.999Z'
   let data = await getData(apiUrl)
   priceData.value = data.data
+
 },
   { immediate: true }
 )
@@ -269,25 +286,25 @@ function priceHours(time, addHours) {
   return timeString
 }
 
-function markCurrentHour(time){
+function markCurrentHour(time) {
   let thisdate = new Date();
   let currDate = moment(thisdate).format('YYYY-MM-DD').toString()
-  let priceDate = moment(time*1000).format('YYYY-MM-DD').toString()
-  let priceHour = moment(time*1000).hour()
+  let priceDate = moment(time * 1000).format('YYYY-MM-DD').toString()
+  let priceHour = moment(time * 1000).hour()
   let currentHour = moment(thisdate).hour()
   let colorRow = ""
- if(currDate === priceDate) {
-  //get current hour and compare
-  colorRow = (priceHour === currentHour ? "table-primary" : "")
- }
-//  console.log(colorRow)
-//  console.log(currDate)
-//  console.log(currentHour)
-//  console.log(priceDate)
-//  console.log(priceHour)
-//  console.log("price date and hour: " + moment(time*1000).format('YYYY-MM-DD HH:mm'))
+  if (currDate === priceDate) {
+    //get current hour and compare
+    colorRow = (priceHour === currentHour ? "table-primary" : "")
+  }
+  //  console.log(colorRow)
+  //  console.log(currDate)
+  //  console.log(currentHour)
+  //  console.log(priceDate)
+  //  console.log(priceHour)
+  //  console.log("price date and hour: " + moment(time*1000).format('YYYY-MM-DD HH:mm'))
 
- return colorRow
+  return colorRow
 }
 
 </script>
