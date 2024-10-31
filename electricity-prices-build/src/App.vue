@@ -203,16 +203,19 @@ function getDistributionPrice(time) {
   let initDate = new Date(time * 1000)
   let newDate = new moment(initDate)
   let weekend = [0, 6].includes(newDate.day()) === false ? 'mondayToFriday' : 'weekend'
-  weekend = holidayDates.includes(newDate.format('MM-DD')) ? weekend = 'weekend' : weekend
+ 
   // console.log(holidayDates.includes(newDate.format('MM-DD')))
   let hour = moment(newDate).hour()
   let daylightSaving = (moment(time)).isDST() === false ? "wintertime" : "summertime"
   let zone = timeZones[state.value.zone]
+  
+
   let plan = zone.values.tariffs[state.value.plan]
   let timetable = ''
 
   switch (zone.name) {
     case "Four zones":
+      weekend = holidayDates.includes(newDate.format('MM-DD')) ? weekend = 'weekend' : weekend
       timetable = zone.values.hours['alltime'][weekend]
       break
     case "Two zones":
