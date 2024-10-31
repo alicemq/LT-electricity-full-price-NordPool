@@ -22,49 +22,6 @@ const holidayDates = ["01-01",
   "12-25",
   "12-26"]
 
-//default storage
-const theDefault = {
-  zone: "Four zones",
-  plan: "Smart",
-  vendorMargin: '0.02003',
-  VIAP: 0,
-  distributionplus: "0.00054",
-  PVMIncluded: true
-}
-const state = useStorage('elecsettings', theDefault)
-
-//check default plan
-if (state.value.zone === "Four zones") {
-  state.value.plan = "Smart"
-} else {
-  if (state.value.zone != "Four zones" && state.value.plan === "Smart") {
-    state.value.plan = "Standart"
-  }
-}
-
-
-let date = ref(new Date());
-// console.log(date)
-const minDate = ref(new Date("2012-07-01"))
-let currentDate = moment(date).format('YYYY-MM-DD').toString()
-
-let lastDay = moment(currentDate).subtract(1, 'days').format('YYYY-MM-DD')
-let nextDay = moment().add(1, 'days').format('YYYY-MM-DD')
-// let apiUrl = 'https://dashboard.elering.ee/api/nps/price?start=' + lastDay + 'T21%3A00%3A00.999Z&end=' + currentDate + 'T20%3A59%3A59.999Z'
-
-async function getData(url) {
-  let response = await axios.get(url)
-  let data = response.data
-
-  return data
-}
-
-// weather location data
-
-
-
-
-
 let priceData = ref([])
 
 let countries = [
@@ -185,6 +142,44 @@ const timeZones = {
     }
   }
 }
+let date = ref(new Date());
+const minDate = ref(new Date("2012-07-01"))
+let currentDate = moment(date).format('YYYY-MM-DD').toString()
+let lastDay = moment(currentDate).subtract(1, 'days').format('YYYY-MM-DD')
+let nextDay = moment().add(1, 'days').format('YYYY-MM-DD')
+//default storage
+const theDefault = {
+  zone: "Four zones",
+  plan: "Smart",
+  vendorMargin: '0.02003',
+  VIAP: 0,
+  distributionplus: "0.00054",
+  PVMIncluded: true
+}
+const state = useStorage('elecsettings', theDefault)
+
+//check default plan
+if (state.value.zone === "Four zones") {
+  state.value.plan = "Smart"
+} else {
+  if (state.value.zone != "Four zones" && state.value.plan === "Smart") {
+    state.value.plan = "Standart"
+  }
+}
+
+async function getData(url) {
+  let response = await axios.get(url)
+  let data = response.data
+
+  return data
+}
+
+// weather location data
+
+
+
+
+
 
 
 //handle four zone and smart pairing
@@ -203,12 +198,12 @@ function getDistributionPrice(time) {
   let initDate = new Date(time * 1000)
   let newDate = new moment(initDate)
   let weekend = [0, 6].includes(newDate.day()) === false ? 'mondayToFriday' : 'weekend'
- 
+
   // console.log(holidayDates.includes(newDate.format('MM-DD')))
   let hour = moment(newDate).hour()
   let daylightSaving = (moment(time)).isDST() === false ? "wintertime" : "summertime"
   let zone = timeZones[state.value.zone]
-  
+
 
   let plan = zone.values.tariffs[state.value.plan]
   let timetable = ''
