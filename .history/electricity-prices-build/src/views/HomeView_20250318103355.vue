@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, computed } from 'vue'
+import { ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import moment from 'moment-timezone';
 import { fetchPrices } from '../services/priceService';
@@ -13,12 +13,8 @@ const priceData = ref([]);
 const nextDay = moment().add(1, 'days').format('YYYY-MM-DD');
 
 watch(date, async (newValue) => {
-  try {
-    const data = await fetchPrices(newValue);
-    priceData.value = data.data?.lt || [];
-  } catch (error) {
-    priceData.value = [];
-  }
+  const data = await fetchPrices(newValue);
+  priceData.value = data.data.lt;
 }, { immediate: true });
 
 function setToday() {
@@ -34,7 +30,7 @@ function setToday() {
         auto-apply reverse-years :enable-time-picker="false" 
         :max-date="nextDay" :min-date="minDate" prevent-min-max-navigation 
         class="flex-grow-1" />
-      <button @click="setToday" class="btn btn-secondary">Today</button>
+      <button @click="setToday" class="btn btn-primary">Today</button>
     </div>
 
     <PriceTable :priceData="priceData" />

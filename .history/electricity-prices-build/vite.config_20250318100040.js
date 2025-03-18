@@ -15,17 +15,16 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url))
     }
   },
+  base: './',
+  build: {
+    outDir: '../dist'
+  },
   server: {
     proxy: {
       '/api': {
         target: 'https://dashboard.elering.ee',
         changeOrigin: true,
-        secure: false,
-        configure: (proxy, options) => {
-          proxy.on('proxyReq', (proxyReq, req, res) => {
-            console.log(`[${new Date().toISOString()}] Proxying: ${req.method} ${req.url} -> ${options.target}${req.url}`);
-          });
-        }
+        secure: false
       }
     }
   }

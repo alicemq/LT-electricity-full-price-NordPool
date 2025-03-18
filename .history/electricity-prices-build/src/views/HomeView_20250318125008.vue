@@ -17,6 +17,7 @@ watch(date, async (newValue) => {
     const data = await fetchPrices(newValue);
     priceData.value = data.data?.lt || [];
   } catch (error) {
+    console.error('Failed to fetch prices:', error);
     priceData.value = [];
   }
 }, { immediate: true });
