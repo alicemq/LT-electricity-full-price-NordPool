@@ -56,7 +56,7 @@ const getRowInfo = (price) => {
 };
 
 const isCurrentHourClass = (timestamp) => {
-  return isCurrentHour(timestamp) ? 'fw-bold border border-dark' : '';
+  return isCurrentHour(timestamp) ? 'current-hour fw-bold' : '';
 };
 </script>
 
@@ -96,5 +96,23 @@ const isCurrentHourClass = (timestamp) => {
 </template>
 
 <style scoped>
-/* Remove all custom styling and rely on Bootstrap classes */
+.current-hour {
+  position: relative;
+  animation: pulse 2s infinite;
+  font-weight: bold;
+  box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
+  z-index: 1;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(0, 123, 255, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 123, 255, 0);
+  }
+}
 </style>

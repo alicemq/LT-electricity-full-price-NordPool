@@ -26,15 +26,15 @@ function getPriceSettings() {
 
 export async function fetchPrices(date) {
     const range = getDateRangeForApi(date);
+    const settings = getPriceSettings();
     
-    // Only include API parameters, not calculation parameters
     const apiUrl = `/api/nps/price?` + new URLSearchParams({
         start: range.start,
-        end: range.end
+        end: range.end,
+        margin: settings.margin,
+        vat: settings.vat
     });
 
     logApiCall(apiUrl);
-    // Save settings to localStorage but don't send them to API
-    getPriceSettings(); // Just to ensure settings are loaded
     return (await axios.get(apiUrl)).data;
 }

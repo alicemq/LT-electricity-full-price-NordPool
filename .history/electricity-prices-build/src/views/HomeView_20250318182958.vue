@@ -12,6 +12,24 @@ const minDate = ref(new Date("2012-07-01"));
 const priceData = ref([]);
 const nextDay = moment().add(1, 'days').format('YYYY-MM-DD');
 
+const selectedDate = ref(new Date());
+const isLoading = ref(true);
+
+const toggleDate = () => {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  selectedDate.value = selectedDate.value.getDate() === tomorrow.getDate() 
+    ? new Date() 
+    : tomorrow;
+  loadPrices(); // Assuming you have this method to load prices
+};
+
+const getDateButtonText = () => {
+  return selectedDate.value.getDate() === new Date().getDate() 
+    ? 'Show Tomorrow' 
+    : 'Show Today';
+};
+
 watch(date, async (newValue) => {
   try {
     const data = await fetchPrices(newValue);
@@ -32,6 +50,16 @@ function setTomorrow() {
 
 <template>
   <div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h1>Electricity Prices</h1>
+      <button 
+        class="btn btn-outline-primary" 
+        @click="toggleDate"
+        :disabled="isLoading"
+      >
+        {{ getDateButtonText() }}
+      </button>
+    </div>
     <div class="home-page">
       <h1 class="mb-3">Electricity Prices</h1>
       <div class="d-flex gap-2 mb-3">

@@ -29,7 +29,7 @@ const router = createRouter({
     {
       path: '/upcoming',
       name: 'upcoming',
-      component: () => import('../views/UpcomingPricesView.vue')
+      component: UpcomingPrices
     }
   ]
 })

@@ -15,26 +15,9 @@ function getDateRangeForApi(date) {
     };
 }
 
-function getPriceSettings() {
-    const defaultSettings = {
-        margin: 0.0,
-        vat: 21
-    };
-    const settings = localStorage.getItem('priceCalculationSettings');
-    return settings ? JSON.parse(settings) : defaultSettings;
-}
-
 export async function fetchPrices(date) {
     const range = getDateRangeForApi(date);
-    
-    // Only include API parameters, not calculation parameters
-    const apiUrl = `/api/nps/price?` + new URLSearchParams({
-        start: range.start,
-        end: range.end
-    });
-
+    const apiUrl = `/api/nps/price?start=${encodeURIComponent(range.start)}&end=${encodeURIComponent(range.end)}`;
     logApiCall(apiUrl);
-    // Save settings to localStorage but don't send them to API
-    getPriceSettings(); // Just to ensure settings are loaded
     return (await axios.get(apiUrl)).data;
 }

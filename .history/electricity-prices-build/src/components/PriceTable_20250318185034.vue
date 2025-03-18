@@ -54,10 +54,6 @@ const getRowInfo = (price) => {
     isCurrentHour(price.timestamp)
   ).classes };
 };
-
-const isCurrentHourClass = (timestamp) => {
-  return isCurrentHour(timestamp) ? 'fw-bold border border-dark' : '';
-};
 </script>
 
 <template>
@@ -78,7 +74,7 @@ const isCurrentHourClass = (timestamp) => {
           :key="price.timestamp" 
           :class="[
             getRowInfo(price).classes,
-            isCurrentHourClass(price.timestamp)
+            isCurrentHour(price.timestamp) ? 'fw-bold' : ''
           ]"
         >
           <td v-html="formatPriceHours(price.timestamp, 1)"></td>
@@ -94,7 +90,3 @@ const isCurrentHourClass = (timestamp) => {
     </div>
   </div>
 </template>
-
-<style scoped>
-/* Remove all custom styling and rely on Bootstrap classes */
-</style>

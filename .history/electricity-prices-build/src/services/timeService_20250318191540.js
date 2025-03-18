@@ -11,13 +11,11 @@ export function formatPriceHours(time, addHours) {
 
 /**
  * Returns the local date and time from a timestamp in a readable format
- * @param {number} timestamp - Unix timestamp in seconds
+ * @param {string} timestamp - ISO timestamp
  * @returns {string} Formatted local date and time
  */
 export function formatLocalTime(timestamp) {
-  // Convert Unix timestamp (seconds) to milliseconds
-  const date = new Date(timestamp * 1000);
-  
+  const date = new Date(timestamp);
   return date.toLocaleDateString([], { 
     year: 'numeric',
     month: '2-digit', 
