@@ -174,6 +174,13 @@ async function getData(url) {
   return data
 }
 
+// weather location data
+
+
+
+
+
+
 
 //handle four zone and smart pairing
 watch(state.value, async (newValue, oldValue) => {

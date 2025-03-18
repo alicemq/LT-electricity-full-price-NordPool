@@ -14,14 +14,5 @@ export default defineConfig({
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))
     }
-  },
-  server: {
-    proxy: {
-      '/api': {
-        target: 'https://dashboard.elering.ee',
-        changeOrigin: true,
-        secure: false
-      }
-    }
   }
 })

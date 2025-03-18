@@ -174,6 +174,13 @@ async function getData(url) {
   return data
 }
 
+// weather location data
+
+
+
+
+
+
 
 //handle four zone and smart pairing
 watch(state.value, async (newValue, oldValue) => {
@@ -233,12 +240,14 @@ watch(date, async (newValue, oldValue) => {
   let currentDate = currentDateInit.format('YYYY-MM-DD').toString()
   let lastDayInit = moment(currentDate).subtract(1, 'days')
   let lastDay = lastDayInit.format('YYYY-MM-DD')
+  // console.log(date)
   let lastDayHour = lastDayInit.isDST() ? 21 : 22
   let currentDayHour = currentDateInit.isDST() ? 20 : 21
   let nextDay = moment().add(1, 'days').format('YYYY-MM-DD')
-  let apiUrl = '/api/nps/price?start=' + lastDay + 'T' + lastDayHour + '%3A00%3A00.999Z&end=' + currentDate + 'T' + currentDayHour + '%3A59%3A59.999Z'
+  let apiUrl = 'https://dashboard.elering.ee/api/nps/price?start=' + lastDay + 'T' + lastDayHour + '%3A00%3A00.999Z&end=' + currentDate + 'T' + currentDayHour + '%3A59%3A59.999Z'
   let data = await getData(apiUrl)
   priceData.value = data.data
+
 },
   { immediate: true }
 )
