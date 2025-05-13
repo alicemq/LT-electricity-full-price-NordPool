@@ -51,10 +51,6 @@ onUnmounted(() => {
   document.removeEventListener('visibilitychange', handleVisibilityChange);
 });
 
-watch(date, () => {
-  reloadPrices();
-});
-
 function setToday() {
   date.value = new Date();
 }

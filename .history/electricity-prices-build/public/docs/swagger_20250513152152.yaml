@@ -1,0 +1,193 @@
+openapi: 3.0.3
+info:
+  title: Electricity Price API
+  version: 1.0.0
+  description: API for electricity price data (today, upcoming, NordPool)
+servers:
+  - url: /eapi
+paths:
+  /price_today.php:
+    get:
+      summary: Get today's electricity prices
+      parameters:
+        - in: query
+          name: zone
+          schema:
+            type: string
+          required: true
+          description: Price zone
+        - in: query
+          name: plan
+          schema:
+            type: string
+          required: true
+          description: Plan name
+        - in: query
+          name: vendor_margin
+          schema:
+            type: number
+          required: true
+          description: Vendor margin in EUR
+        - in: query
+          name: date
+          schema:
+            type: string
+            format: date
+          required: false
+          description: Date (default: today)
+        - in: query
+          name: vat
+          schema:
+            type: string
+            enum: [yes, no]
+          required: false
+          description: Apply VAT (default: yes)
+        - in: query
+          name: threshold
+          schema:
+            type: number
+          required: false
+          description: Price threshold
+      responses:
+        '200':
+          description: Price data for today
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  timestamp:
+                    type: integer
+                  date:
+                    type: string
+                  hours:
+                    type: array
+                    items:
+                      type: object
+                  priceClassification:
+                    type: string
+              example:
+                timestamp: 1715589600
+                date: '2025-05-13'
+                hours:
+                  - hour: 0
+                    price: 0.092
+                    classification: cheap
+                priceClassification: mostly-cheap
+  /price_upcoming.php:
+    get:
+      summary: Get upcoming electricity prices (today + next day)
+      parameters:
+        - in: query
+          name: zone
+          schema:
+            type: string
+          required: true
+          description: Price zone
+        - in: query
+          name: plan
+          schema:
+            type: string
+          required: true
+          description: Plan name
+        - in: query
+          name: vendor_margin
+          schema:
+            type: number
+          required: true
+          description: Vendor margin in EUR
+        - in: query
+          name: date
+          schema:
+            type: string
+            format: date
+          required: false
+          description: Date (default: today)
+        - in: query
+          name: vat
+          schema:
+            type: string
+            enum: [yes, no]
+          required: false
+          description: Apply VAT (default: yes)
+        - in: query
+          name: threshold
+          schema:
+            type: number
+          required: false
+          description: Price threshold
+      responses:
+        '200':
+          description: Price data for today and next day
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  timestamp:
+                    type: integer
+                  date:
+                    type: string
+                  hours:
+                    type: array
+                    items:
+                      type: object
+                  priceClassification:
+                    type: string
+              example:
+                timestamp: 1715589600
+                date: '2025-05-13'
+                hours:
+                  - date: '2025-05-13'
+                    hour: 0
+                    price: 0.092
+                    classification: cheap
+                priceClassification: mostly-cheap
+  /nps.php:
+    get:
+      summary: Get NordPool price data
+      parameters:
+        - in: query
+          name: date_from
+          schema:
+            type: string
+            format: date
+          required: false
+          description: Start date (default: today)
+        - in: query
+          name: date_to
+          schema:
+            type: string
+            format: date
+          required: false
+          description: End date (default: date_from)
+        - in: query
+          name: vat
+          schema:
+            type: string
+            enum: [yes, no]
+          required: false
+          description: Apply VAT (default: yes)
+      responses:
+        '200':
+          description: NordPool price data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  timestamp:
+                    type: integer
+                  date:
+                    type: string
+                  hours:
+                    type: array
+                    items:
+                      type: object
+              example:
+                timestamp: 1715589600
+                date: '2025-05-13'
+                hours:
+                  - date: '2025-05-13'
+                    hour: 0
+                    price: 0.073 
