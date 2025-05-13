@@ -28,7 +28,7 @@ export async function fetchPrices(date) {
     const range = getDateRangeForApi(date);
     
     // Only include API parameters, not calculation parameters
-    const apiUrl = `${import.meta.env.VITE_API_BASE_URL}&` + new URLSearchParams({
+    const apiUrl = `/api/nps/price?` + new URLSearchParams({
         start: range.start,
         end: range.end
     });
