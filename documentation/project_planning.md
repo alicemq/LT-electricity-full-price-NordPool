@@ -13,7 +13,8 @@
 │                    Port: 80 (Public)                       │
 │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────┐ │
 │  │   Vue.js App    │  │   API Proxy     │  │   Swagger   │ │
-│  │   (Static)      │  │   (/api/*)      │  │   UI        │ │
+│  │   (Static)      │  │   (/api/v1/*)   │  │   UI        │ │
+│  │                 │  │                 │  │   (/api/)   │ │
 │  └─────────────────┘  └─────────────────┘  └─────────────┘ │
 └─────────────────────────────────────────────────────────────┘
                                 │
@@ -53,6 +54,7 @@
 - ✅ **Frontend**: Vue.js 3 application with Nginx proxy (production) / Vite dev server (development)
 - ✅ **Data Sync**: Manual synchronization service
 - ✅ **Worker**: Automated scheduled syncs
+- ✅ **Swagger UI**: API documentation interface (accessible at `/api/`)
 
 ## 🚀 **Key Achievements**
 
@@ -92,6 +94,7 @@
 - ✅ **Production proxy** - Nginx serves frontend and proxies API calls
 - ✅ **Consistent API paths** - Same endpoints work in dev and production
 - ✅ **Proxy logging** - All API calls logged for debugging and monitoring
+- ✅ **Swagger UI integration** - Interactive API documentation at `/api/`
 
 ## 📈 **Performance Metrics**
 
@@ -123,17 +126,17 @@
 ### **API Endpoints**
 ```javascript
 // Implemented endpoints (all accessed through frontend proxy)
-GET /api/nps/prices?date=YYYY-MM-DD&country=lt    // Single date prices
-GET /api/nps/prices?start=YYYY-MM-DD&end=YYYY-MM-DD&country=lt  // Date range prices
-GET /api/nps/price/:country/latest                // Latest price (Elering-style)
-GET /api/nps/price/:country/current               // Current hour price
-GET /api/nps/price/ALL/latest                     // Latest prices for all countries
-GET /api/nps/price/ALL/current                    // Current hour prices for all countries
-GET /api/latest                                   // Latest available prices
-GET /api/countries                                // Available countries
-GET /api/health                                   // System health check
-GET /api/docs                                     // Swagger UI documentation
-GET /api/openapi.yaml                             // OpenAPI specification
+GET /api/v1/nps/prices?date=YYYY-MM-DD&country=lt    // Single date prices
+GET /api/v1/nps/prices?start=YYYY-MM-DD&end=YYYY-MM-DD&country=lt  // Date range prices
+GET /api/v1/nps/price/:country/latest                // Latest price (Elering-style)
+GET /api/v1/nps/price/:country/current               // Current hour price
+GET /api/v1/nps/price/ALL/latest                     // Latest prices for all countries
+GET /api/v1/nps/price/ALL/current                    // Current hour prices for all countries
+GET /api/v1/latest                                   // Latest available prices
+GET /api/v1/countries                                // Available countries
+GET /api/v1/health                                   // System health check
+GET /api/                                            // Swagger UI documentation
+GET /api/openapi.yaml                                // OpenAPI specification
 ```
 
 ### **Proxy Configuration**
@@ -143,8 +146,13 @@ GET /api/openapi.yaml                             // OpenAPI specification
 // vite.config.js
 server: {
   proxy: {
-    '/api': {
+    '/api/v1': {
       target: 'http://backend:3000',
+      changeOrigin: true,
+      secure: false
+    },
+    '/api': {
+      target: 'http://swagger-ui:8080/swagger',
       changeOrigin: true,
       secure: false
     }
@@ -155,8 +163,16 @@ server: {
 #### **Production (Nginx)**
 ```nginx
 # nginx.conf
-location /api/ {
+location /api/v1/ {
     proxy_pass http://backend:3000;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+
+location /api/ {
+    proxy_pass http://swagger-ui:8080/api/;
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -193,6 +209,7 @@ location /api/ {
 - ✅ Containerized deployment
 - ✅ Secure production architecture
 - ✅ Frontend proxy routing
+- ✅ Swagger UI documentation
 
 ## 🛠 **Current Services**
 
@@ -227,6 +244,12 @@ location /api/ {
 - **Features**: NordPool-aware timing, weekly syncs, conflict resolution
 - **Status**: ✅ Operational
 
+### **6. Swagger UI Service**
+- **Purpose**: Interactive API documentation and testing
+- **Features**: OpenAPI specification, interactive endpoints, auto-generated docs
+- **Access**: `/api/` (both development and production)
+- **Status**: ✅ Operational
+
 ## 📋 **Usage Instructions**
 
 ### **Production Mode (Recommended)**
@@ -238,6 +261,7 @@ location /api/ {
 docker-compose --env-file .env.production up -d --build
 
 # Access: http://localhost:80 (all API calls proxied)
+# Swagger UI: http://localhost:80/api/
 ```
 
 ### **Development Mode**
@@ -249,6 +273,7 @@ docker-compose --env-file .env.production up -d --build
 docker-compose -f docker-compose.yml -f docker-compose.dev.yml --env-file .env.development up -d --build
 
 # Access: http://localhost:5173 (frontend) + http://localhost:3000 (backend)
+# Swagger UI: http://localhost:5173/api/
 ```
 
 ### **Manual Data Sync**
@@ -269,11 +294,15 @@ docker-compose run data-sync historical lt 2024-01-01 2024-12-31
 ### **API Testing**
 ```bash
 # Test through frontend proxy
-curl "http://localhost:80/api/health"                    # Production
-curl "http://localhost:5173/api/health"                  # Development
+curl "http://localhost:80/api/v1/health"                    # Production
+curl "http://localhost:5173/api/v1/health"                  # Development
 
 # Test backend directly (development only)
-curl "http://localhost:3000/api/health"                  # Development only
+curl "http://localhost:3000/api/v1/health"                  # Development only
+
+# Access Swagger UI
+curl "http://localhost:80/api/"                             # Production
+curl "http://localhost:5173/api/"                           # Development
 ```
 
 ## 🔒 **Security Architecture**
@@ -295,8 +324,8 @@ curl "http://localhost:3000/api/health"                  # Development only
 ## 🔮 **Future Enhancements (Optional)**
 
 ### **High Priority**
-1. **Swagger UI Integration**
-   - OpenAPI specification documentation
+1. **Enhanced Swagger UI Integration**
+   - Complete OpenAPI specification documentation
    - Interactive API testing interface
    - Auto-generated client SDKs
 

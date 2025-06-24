@@ -5,15 +5,16 @@
 The Electricity Prices NordPool API provides access to historical and current electricity price data for Baltic countries (Lithuania, Estonia, Latvia, Finland) with DST-aware timestamp handling.
 
 **Base URL**: 
-- **Production**: `https://yourdomain.com/api` (accessed through frontend proxy)
-- **Development**: `http://localhost:5173/api` (accessed through Vite proxy)
+- **Production**: `https://yourdomain.com/api/v1` (accessed through frontend proxy)
+- **Development**: `http://localhost:5173/api/v1` (accessed through Vite proxy)
 
 ## Architecture
 
 All API calls are routed through the frontend proxy:
-- **Production**: Nginx serves frontend and proxies `/api/*` requests to backend
-- **Development**: Vite dev server proxies `/api/*` requests to backend
+- **Production**: Nginx serves frontend and proxies `/api/v1/*` requests to backend
+- **Development**: Vite dev server proxies `/api/v1/*` requests to backend
 - **Backend**: Internal only, not directly accessible from internet
+- **Swagger UI**: Available at `/api/` for interactive documentation
 
 ## Authentication
 
@@ -24,17 +25,17 @@ Currently, the API does not require authentication for read operations.
 ### 1. Health Check
 
 ```http
-GET /api/health
+GET /api/v1/health
 ```
 
 **Example:**
 
 ```bash
 # Production
-curl "https://yourdomain.com/api/health"
+curl "https://yourdomain.com/api/v1/health"
 
 # Development
-curl "http://localhost:5173/api/health"
+curl "http://localhost:5173/api/v1/health"
 ```
 
 **Response:**
@@ -45,7 +46,8 @@ curl "http://localhost:5173/api/health"
   "timestamp": "2025-06-24T14:32:39.024Z",
   "services": {
     "database": "connected",
-    "api": "running"
+    "api": "running",
+    "version": "v1"
   }
 }
 ```
@@ -53,17 +55,17 @@ curl "http://localhost:5173/api/health"
 ### 2. Get Available Countries
 
 ```http
-GET /api/countries
+GET /api/v1/countries
 ```
 
 **Example:**
 
 ```bash
 # Production
-curl "https://yourdomain.com/api/countries"
+curl "https://yourdomain.com/api/v1/countries"
 
 # Development
-curl "http://localhost:5173/api/countries"
+curl "http://localhost:5173/api/v1/countries"
 ```
 
 **Response:**
@@ -97,7 +99,7 @@ curl "http://localhost:5173/api/countries"
 #### Get Latest Price (Elering-style)
 
 ```http
-GET /api/nps/price/:country/latest
+GET /api/v1/nps/price/:country/latest
 ```
 
 **Parameters:**
@@ -108,10 +110,10 @@ GET /api/nps/price/:country/latest
 
 ```bash
 # Production
-curl "https://yourdomain.com/api/nps/price/LT/latest"
+curl "https://yourdomain.com/api/v1/nps/price/LT/latest"
 
 # Development
-curl "http://localhost:5173/api/nps/price/LT/latest"
+curl "http://localhost:5173/api/v1/nps/price/LT/latest"
 ```
 
 **Response:**
@@ -121,11 +123,12 @@ curl "http://localhost:5173/api/nps/price/LT/latest"
   "data": [
     {
       "timestamp": 1750885200,
-      "price": 75.0
+      "price": 75.0,
+      "country": "LT"
     }
   ],
   "meta": {
-    "country": "LT",
+    "countries": ["LT"],
     "date": "2025-06-26",
     "hour": "00:00",
     "timezone": "Europe/Vilnius",
@@ -139,7 +142,7 @@ curl "http://localhost:5173/api/nps/price/LT/latest"
 #### Get Current Price
 
 ```http
-GET /api/nps/price/:country/current
+GET /api/v1/nps/price/:country/current
 ```
 
 **Parameters:**
@@ -150,10 +153,10 @@ GET /api/nps/price/:country/current
 
 ```bash
 # Production
-curl "https://yourdomain.com/api/nps/price/LT/current"
+curl "https://yourdomain.com/api/v1/nps/price/LT/current"
 
 # Development
-curl "http://localhost:5173/api/nps/price/LT/current"
+curl "http://localhost:5173/api/v1/nps/price/LT/current"
 ```
 
 **Response:**
@@ -163,11 +166,12 @@ curl "http://localhost:5173/api/nps/price/LT/current"
   "data": [
     {
       "timestamp": 1750885200,
-      "price": 75.0
+      "price": 75.0,
+      "country": "LT"
     }
   ],
   "meta": {
-    "country": "LT",
+    "countries": ["LT"],
     "date": "2025-06-26",
     "hour": "00:00",
     "timezone": "Europe/Vilnius",
@@ -183,7 +187,7 @@ curl "http://localhost:5173/api/nps/price/LT/current"
 #### Get Price Data (Date Range)
 
 ```http
-GET /api/nps/prices
+GET /api/v1/nps/prices
 ```
 
 **Parameters:**
@@ -197,16 +201,16 @@ GET /api/nps/prices
 
 ```bash
 # Single date - Production
-curl "https://yourdomain.com/api/nps/prices?date=2025-06-24&country=lt"
+curl "https://yourdomain.com/api/v1/nps/prices?date=2025-06-24&country=lt"
 
 # Single date - Development
-curl "http://localhost:5173/api/nps/prices?date=2025-06-24&country=lt"
+curl "http://localhost:5173/api/v1/nps/prices?date=2025-06-24&country=lt"
 
 # Date range - Production
-curl "https://yourdomain.com/api/nps/prices?start=2025-06-20&end=2025-06-24&country=lt"
+curl "https://yourdomain.com/api/v1/nps/prices?start=2025-06-20&end=2025-06-24&country=lt"
 
 # Date range - Development
-curl "http://localhost:5173/api/nps/prices?start=2025-06-20&end=2025-06-24&country=lt"
+curl "http://localhost:5173/api/v1/nps/prices?start=2025-06-20&end=2025-06-24&country=lt"
 ```
 
 **Response:**
@@ -240,17 +244,17 @@ curl "http://localhost:5173/api/nps/prices?start=2025-06-20&end=2025-06-24&count
 #### Get Latest Prices for All Countries
 
 ```http
-GET /api/nps/price/all/latest
+GET /api/v1/nps/price/all/latest
 ```
 
 **Example:**
 
 ```bash
 # Production
-curl "https://yourdomain.com/api/nps/price/all/latest"
+curl "https://yourdomain.com/api/v1/nps/price/all/latest"
 
 # Development
-curl "http://localhost:5173/api/nps/price/all/latest"
+curl "http://localhost:5173/api/v1/nps/price/all/latest"
 ```
 
 **Response:**
@@ -295,17 +299,17 @@ curl "http://localhost:5173/api/nps/price/all/latest"
 #### Get Current Prices for All Countries
 
 ```http
-GET /api/nps/price/all/current
+GET /api/v1/nps/price/all/current
 ```
 
 **Example:**
 
 ```bash
 # Production
-curl "https://yourdomain.com/api/nps/price/all/current"
+curl "https://yourdomain.com/api/v1/nps/price/all/current"
 
 # Development
-curl "http://localhost:5173/api/nps/price/all/current"
+curl "http://localhost:5173/api/v1/nps/price/all/current"
 ```
 
 **Response:**
@@ -354,7 +358,7 @@ curl "http://localhost:5173/api/nps/price/all/current"
 #### Get Latest Prices (Legacy)
 
 ```http
-GET /api/latest
+GET /api/v1/latest
 ```
 
 **Parameters:**
@@ -365,10 +369,10 @@ GET /api/latest
 
 ```bash
 # Production
-curl "https://yourdomain.com/api/latest?country=lt"
+curl "https://yourdomain.com/api/v1/latest?country=lt"
 
 # Development
-curl "http://localhost:5173/api/latest?country=lt"
+curl "http://localhost:5173/api/v1/latest?country=lt"
 ```
 
 **Response:**
@@ -395,27 +399,27 @@ curl "http://localhost:5173/api/latest?country=lt"
 #### Get Price Data (Legacy - Redirects to new endpoint)
 
 ```http
-GET /api/prices
+GET /api/v1/prices
 ```
 
-**Note**: This endpoint redirects to `/api/nps/prices` for backward compatibility.
+**Note**: This endpoint redirects to `/api/v1/nps/prices` for backward compatibility.
 
 ### 6. Documentation Endpoints
 
 #### Swagger UI
 
 ```http
-GET /api/docs
+GET /api/
 ```
 
 **Example:**
 
 ```bash
 # Production
-curl "https://yourdomain.com/api/docs"
+curl "https://yourdomain.com/api/"
 
 # Development
-curl "http://localhost:5173/api/docs"
+curl "http://localhost:5173/api/"
 ```
 
 #### OpenAPI Specification
@@ -511,7 +515,7 @@ CORS is handled by the frontend proxy:
 - **Format**: `[timestamp] Proxying: METHOD /path -> target`
 
 ### Health Monitoring
-- Use `/api/health` endpoint for system health checks
+- Use `/api/v1/health` endpoint for system health checks
 - Monitor proxy logs for API call patterns
 - Check backend logs for error rates and response times
 
@@ -521,11 +525,11 @@ CORS is handled by the frontend proxy:
 
 ```javascript
 // Using fetch API
-const response = await fetch('/api/nps/price/lt/latest');
+const response = await fetch('/api/v1/nps/price/lt/latest');
 const data = await response.json();
 
 // Using axios
-const response = await axios.get('/api/nps/price/lt/latest');
+const response = await axios.get('/api/v1/nps/price/lt/latest');
 const data = response.data;
 ```
 
@@ -533,16 +537,19 @@ const data = response.data;
 
 ```bash
 # Get current prices for all countries
-curl "https://yourdomain.com/api/nps/price/all/current"
+curl "https://yourdomain.com/api/v1/nps/price/all/current"
 
 # Get historical data for Lithuania
-curl "https://yourdomain.com/api/nps/prices?date=2025-06-24&country=lt"
+curl "https://yourdomain.com/api/v1/nps/prices?date=2025-06-24&country=lt"
 
 # Get latest price for Estonia
-curl "https://yourdomain.com/api/nps/price/ee/latest"
+curl "https://yourdomain.com/api/v1/nps/price/ee/latest"
 
 # Check system health
-curl "https://yourdomain.com/api/health"
+curl "https://yourdomain.com/api/v1/health"
+
+# Access Swagger UI
+curl "https://yourdomain.com/api/"
 ```
 
 ---

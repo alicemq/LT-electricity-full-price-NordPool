@@ -38,11 +38,13 @@ docker-compose -f docker-compose.yml -f docker-compose.dev.yml --env-file .env.d
 - **Frontend**: http://localhost:80 (Nginx with API proxy)
 - **Backend**: Internal only (accessed via frontend proxy)
 - **Database**: Internal only
+- **Swagger UI**: http://localhost:80/api/ (API documentation)
 
 #### **Development Mode**
 - **Frontend**: http://localhost:5173 (Vite dev server)
 - **Backend**: http://localhost:3000 (Express with hot-reload)
 - **Database**: localhost:5432
+- **Swagger UI**: http://localhost:5173/api/ (API documentation)
 
 ## 📊 **System Overview**
 
@@ -52,6 +54,7 @@ docker-compose -f docker-compose.yml -f docker-compose.dev.yml --env-file .env.d
 - **Database**: PostgreSQL with DST-aware timestamps
 - **Data Sync**: Automated service with NordPool-aware scheduling
 - **Worker**: Scheduled synchronization service
+- **Swagger UI**: Interactive API documentation
 
 ### **Security Architecture**
 - ✅ **Frontend proxy**: All API calls routed through frontend
@@ -68,6 +71,7 @@ docker-compose -f docker-compose.yml -f docker-compose.dev.yml --env-file .env.d
 - ✅ **Containerized deployment** for easy scaling
 - ✅ **Historical data** from 2012-07-01 to present
 - ✅ **Secure production architecture** with proxy routing
+- ✅ **Interactive API documentation** with Swagger UI
 
 ## 🔧 **Services**
 
@@ -99,6 +103,12 @@ docker-compose -f docker-compose.yml -f docker-compose.dev.yml --env-file .env.d
 - Automated scheduled syncs every 30 minutes (12:30-18:00 CET)
 - Weekly full sync on Sundays at 2 AM
 - NordPool clearing price announcement timing
+
+### **Swagger UI Service**
+- Interactive API documentation and testing
+- OpenAPI specification
+- Auto-generated endpoint documentation
+- Accessible at `/api/` in both development and production
 
 ## 📋 **Usage**
 
@@ -136,17 +146,17 @@ docker-compose -f docker-compose.yml -f docker-compose.dev.yml logs -f
 All API endpoints are accessed through the frontend proxy:
 
 ```javascript
-GET /api/nps/prices/:date          // Single date prices
-GET /api/nps/prices/:start/:end    // Date range prices
-GET /api/nps/price/:country/latest // Latest price (Elering-style)
-GET /api/nps/price/:country/current // Current hour price
-GET /api/nps/price/ALL/latest      // Latest prices for all countries
-GET /api/nps/price/ALL/current     // Current hour prices for all countries
-GET /api/latest                    // Latest available prices
-GET /api/countries                 // Available countries
-GET /api/health                    // System health check
-GET /api/docs                      // Swagger UI documentation
-GET /api/openapi.yaml              // OpenAPI specification
+GET /api/v1/nps/prices/:date          // Single date prices
+GET /api/v1/nps/prices/:start/:end    // Date range prices
+GET /api/v1/nps/price/:country/latest // Latest price (Elering-style)
+GET /api/v1/nps/price/:country/current // Current hour price
+GET /api/v1/nps/price/ALL/latest      // Latest prices for all countries
+GET /api/v1/nps/price/ALL/current     // Current hour prices for all countries
+GET /api/v1/latest                    // Latest available prices
+GET /api/v1/countries                 // Available countries
+GET /api/v1/health                    // System health check
+GET /api/                             // Swagger UI documentation
+GET /api/openapi.yaml                 // OpenAPI specification
 ```
 
 **Country Codes**: `lt`, `ee`, `lv`, `fi`, `all` (case insensitive)
@@ -173,7 +183,8 @@ GET /api/openapi.yaml              // OpenAPI specification
 │                    Port: 80 (Public)                       │
 │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────┐ │
 │  │   Vue.js App    │  │   API Proxy     │  │   Swagger   │ │
-│  │   (Static)      │  │   (/api/*)      │  │   UI        │ │
+│  │   (Static)      │  │   (/api/v1/*)   │  │   UI        │ │
+│  │                 │  │                 │  │   (/api/)   │ │
 │  └─────────────────┘  └─────────────────┘  └─────────────┘ │
 └─────────────────────────────────────────────────────────────┘
                                 │
@@ -215,7 +226,7 @@ GET /api/openapi.yaml              // OpenAPI specification
 - Admin panel for data management
 - TypeScript migration for type safety
 - Advanced analytics and reporting
-- Swagger UI integration for API documentation
+- Enhanced Swagger UI integration
 
 ## 📞 **Support**
 
@@ -258,6 +269,7 @@ docker-compose -f docker-compose.yml -f docker-compose.dev.yml restart [service-
 
 - [Project Planning](./documentation/project_planning.md) - Detailed project documentation
 - [API Documentation](./electricity-prices-build/public/docs/swagger.yaml) - Swagger API specs
+- [Interactive API Docs](./api/) - Swagger UI interface
 
 ## 🏆 **Migration Success**
 
@@ -269,6 +281,7 @@ docker-compose -f docker-compose.yml -f docker-compose.dev.yml restart [service-
 - ✅ **Containerized deployment** for easy scaling and maintenance
 - ✅ **Secure production architecture** with frontend proxy routing
 - ✅ **Development-friendly setup** with hot-reload and debugging
+- ✅ **Interactive API documentation** with Swagger UI integration
 
 ---
 
