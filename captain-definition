@@ -21,9 +21,17 @@
     "NODE_ENV": "production",
     "DATABASE_URL": "postgresql://electricity_user:electricity_password@postgres:5432/electricity_prices",
     "ELERING_API_URL": "https://dashboard.elering.ee/api/nps/price",
-    "FRONTEND_URL": "https://your-app-name.your-domain.com"
+    "FRONTEND_URL": "https://electricity-prices.your-domain.com",
+    "POSTGRES_DB": "electricity_prices",
+    "POSTGRES_USER": "electricity_user",
+    "POSTGRES_PASSWORD": "electricity_password"
   },
-  "volumes": [],
+  "volumes": [
+    {
+      "containerPath": "/var/lib/postgresql/data",
+      "hostPath": "/captain/data/postgres"
+    }
+  ],
   "notExposeAsWebApp": false,
   "containerHttpPort": 80,
   "description": "Electricity Prices NordPool - Modern containerized electricity price monitoring system for Baltic countries",
