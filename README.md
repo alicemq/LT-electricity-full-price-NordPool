@@ -60,6 +60,7 @@ docker-compose -f docker-compose.yml -f docker-compose.dev.yml --env-file .env.d
 - ✅ **Frontend proxy**: All API calls routed through frontend
 - ✅ **Backend isolation**: Backend not exposed to internet
 - ✅ **Database isolation**: Database not exposed to internet
+- ✅ **Swagger UI isolation**: Swagger UI not exposed to internet
 - ✅ **CORS handling**: Proper CORS configuration in proxy
 - ✅ **Production hardening**: Security headers and optimizations
 
@@ -108,7 +109,7 @@ docker-compose -f docker-compose.yml -f docker-compose.dev.yml --env-file .env.d
 - Interactive API documentation and testing
 - OpenAPI specification
 - Auto-generated endpoint documentation
-- Accessible at `/api/` in both development and production
+- Accessible at `/api/` through frontend proxy only (internal service)
 
 ## 📋 **Usage**
 

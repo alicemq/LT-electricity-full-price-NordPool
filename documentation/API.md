@@ -14,7 +14,7 @@ All API calls are routed through the frontend proxy:
 - **Production**: Nginx serves frontend and proxies `/api/v1/*` requests to backend
 - **Development**: Vite dev server proxies `/api/v1/*` requests to backend
 - **Backend**: Internal only, not directly accessible from internet
-- **Swagger UI**: Available at `/api/` for interactive documentation
+- **Swagger UI**: Available at `/api/` through frontend proxy only (internal service)
 
 ## Authentication
 

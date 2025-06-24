@@ -77,6 +77,7 @@ npm run build
 │  ┌─────────────────┐  ┌─────────────┐   │
 │  │   Vue.js App    │  │   API Proxy │   │
 │  │   (Static)      │  │   (/api/v1) │   │
+│  │                 │  │   (/api/)   │   │
 │  └─────────────────┘  └─────────────┘   │
 └─────────────────────────────────────────┘
 ```
@@ -237,6 +238,12 @@ curl "http://localhost:5173/api/v1/health"
 # Check backend logs
 docker-compose logs -f backend
 ```
+
+### **Swagger UI Service**
+- Interactive API documentation and testing
+- OpenAPI specification
+- Auto-generated endpoint documentation
+- Accessible at `/api/` through frontend proxy only (internal service)
 
 ---
 

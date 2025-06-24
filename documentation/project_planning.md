@@ -31,6 +31,13 @@
                        │   (Internal)    │
                        │   Port: 5432    │
                        └─────────────────┘
+                                │
+                                ▼
+                       ┌─────────────────┐
+                       │   Swagger UI    │
+                       │   (Internal)    │
+                       │   Port: 8080    │
+                       └─────────────────┘
 ```
 
 ### **Development Architecture (Exposed)**
@@ -247,7 +254,8 @@ location /api/ {
 ### **6. Swagger UI Service**
 - **Purpose**: Interactive API documentation and testing
 - **Features**: OpenAPI specification, interactive endpoints, auto-generated docs
-- **Access**: `/api/` (both development and production)
+- **Access**: `/api/` (through frontend proxy only)
+- **Security**: Internal only, not exposed to internet
 - **Status**: ✅ Operational
 
 ## 📋 **Usage Instructions**
@@ -311,6 +319,7 @@ curl "http://localhost:5173/api/"                           # Development
 - ✅ **Frontend proxy**: All API calls routed through frontend
 - ✅ **Backend isolation**: Backend not exposed to internet
 - ✅ **Database isolation**: Database not exposed to internet
+- ✅ **Swagger UI isolation**: Swagger UI not exposed to internet
 - ✅ **CORS handling**: Proper CORS configuration in proxy
 - ✅ **Security headers**: Applied at frontend level
 - ✅ **Single entry point**: All traffic goes through frontend
