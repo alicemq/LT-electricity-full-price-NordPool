@@ -46,10 +46,9 @@ services:
   frontend:
     build:
       context: ./electricity-prices-build
-      dockerfile: Dockerfile
+      dockerfile: ${FRONTEND_DOCKERFILE:-Dockerfile.prod}
       args:
         NODE_ENV: ${NODE_ENV:-production}
-      target: ${NODE_ENV:-production}
     container_name: electricity_frontend
     volumes:
       - ./electricity-prices-build:/app
@@ -58,14 +57,14 @@ services:
       - "80:80"  # Production: serve on port 80
       - "5173:5173"  # Development: keep dev server port
     environment:
-      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api}  # Use relative path for proxy
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api/v1}  # Use new API path
       NODE_ENV: ${NODE_ENV:-production}
     depends_on:
       - backend
     networks:
       - electricity_network
     restart: unless-stopped
-    command: ${FRONTEND_COMMAND:-npm run dev -- --host 0.0.0.0}
+    command: nginx -g 'daemon off;'
 
   # Data sync service (for fetching from Elering API)
   data-sync:
@@ -106,11 +105,25 @@ services:
       - /app/node_modules
     depends_on:
       - db
-      - data-sync
     networks:
       - electricity_network
     restart: unless-stopped
     command: ${WORKER_COMMAND:-node src/worker.js}
+
+  # Swagger UI service for API documentation
+  swagger-ui:
+    build:
+      context: ./swagger-ui
+      dockerfile: Dockerfile
+    container_name: electricity_swagger_ui
+    ports:
+      - "8080:8080"
+    environment:
+      SWAGGER_JSON: /tmp/api.json
+      BASE_URL: /api
+    networks:
+      - electricity_network
+    restart: unless-stopped
 
 volumes:
   postgres_data:

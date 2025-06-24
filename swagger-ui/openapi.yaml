@@ -1,0 +1,389 @@
+openapi: 3.0.3
+info:
+  title: 'Electricity Prices NordPool API'
+  version: '1.0.0'
+  description: 'API for electricity price data from NordPool via Elering API'
+  contact:
+    name: 'Electricity Prices Team'
+servers:
+  - url: 'http://localhost:3000/api'
+    description: 'Development API Server'
+  - url: 'http://backend:3000/api'
+    description: 'Docker Internal API Server'
+  - url: /api/v1
+    description: 'Production API Server (via proxy)'
+paths:
+  /health:
+    get:
+      summary: 'Health check'
+      description: 'Check if the API is running'
+      tags:
+        - Health
+      responses:
+        '200':
+          description: 'API is healthy'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: 'ok'
+                  timestamp:
+                    type: string
+                    format: date-time
+                  timezone:
+                    type: string
+                    example: 'Europe/Vilnius'
+  /countries:
+    get:
+      summary: 'Get available countries'
+      description: 'Retrieve list of available countries for price data'
+      tags:
+        - Countries
+      responses:
+        '200':
+          description: 'List of available countries'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Country'
+              example:
+                success: true
+                data:
+                  - code: 'lt'
+                    name: 'Lithuania'
+                  - code: 'ee'
+                    name: 'Estonia'
+                  - code: 'lv'
+                    name: 'Latvia'
+                  - code: 'fi'
+                    name: 'Finland'
+  /nps/price/{country}/latest:
+    get:
+      summary: 'Get latest price for a country'
+      description: 'Get the most recent electricity price for a specific country'
+      tags:
+        - Prices
+      parameters:
+        - name: country
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [lt, ee, lv, fi, all]
+          description: 'Country code (case insensitive) or "all" for all countries'
+      responses:
+        '200':
+          description: 'Latest price data'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PriceData'
+                  meta:
+                    $ref: '#/components/schemas/PriceMeta'
+              example:
+                data:
+                  - timestamp: 1750885200
+                    price: 75.0
+                    country: 'LT'
+                meta:
+                  countries: ['LT']
+                  date: '2025-06-26'
+                  hour: '00:00'
+                  timezone: 'Europe/Vilnius'
+                  timestamp_local: 1750885200
+                  price_unit: 'EUR/MWh'
+                  data_type: 'latest_published'
+        '404':
+          description: 'No price data found'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /nps/price/{country}/current:
+    get:
+      summary: 'Get current hour price for a country'
+      description: 'Get electricity price for the current hour in Europe/Vilnius timezone'
+      tags:
+        - Prices
+      parameters:
+        - name: country
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [lt, ee, lv, fi, all]
+          description: 'Country code (case insensitive) or "all" for all countries'
+      responses:
+        '200':
+          description: 'Current hour price data'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PriceData'
+                  meta:
+                    allOf:
+                      - $ref: '#/components/schemas/PriceMeta'
+                      - type: object
+                        properties:
+                          current_time_local:
+                            type: string
+                            format: date-time
+                          is_current_hour:
+                            type: boolean
+              example:
+                data:
+                  - timestamp: 1750885200
+                    price: 75.0
+                    country: 'LT'
+                meta:
+                  countries: ['LT']
+                  date: '2025-06-26'
+                  hour: '00:00'
+                  timezone: 'Europe/Vilnius'
+                  timestamp_local: 1750885200
+                  price_unit: 'EUR/MWh'
+                  data_type: 'current_hour'
+                  current_time_local: '2025-06-26 00:15:30'
+                  is_current_hour: true
+        '404':
+          description: 'No price data found for current hour'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /nps/prices:
+    get:
+      summary: 'Get price data for date or date range'
+      description: 'Get electricity prices for a specific date or date range'
+      tags:
+        - Prices
+      parameters:
+        - name: date
+          in: query
+          schema:
+            type: string
+            format: date
+          description: 'Single date (YYYY-MM-DD)'
+        - name: start
+          in: query
+          schema:
+            type: string
+            format: date
+          description: 'Start date for range (YYYY-MM-DD)'
+        - name: end
+          in: query
+          schema:
+            type: string
+            format: date
+          description: 'End date for range (YYYY-MM-DD)'
+        - name: country
+          in: query
+          schema:
+            type: string
+            enum: [lt, ee, lv, fi]
+          description: 'Country code (default: lt)'
+      responses:
+        '200':
+          description: 'Price data for the specified period'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    additionalProperties:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/PriceData'
+                  meta:
+                    type: object
+                    properties:
+                      date:
+                        type: string
+                      country:
+                        type: string
+                      count:
+                        type: integer
+                      timezone:
+                        type: string
+              example:
+                success: true
+                data:
+                  lt:
+                    - timestamp: 1750885200
+                      price: 75.0
+                    - timestamp: 1750888800
+                      price: 68.5
+                meta:
+                  date: '2025-06-26'
+                  country: 'lt'
+                  count: 2
+                  timezone: 'Europe/Vilnius'
+        '400':
+          description: 'Invalid parameters'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 'No price data found'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /latest:
+    get:
+      summary: 'Get latest price (legacy endpoint)'
+      description: 'Legacy endpoint for backward compatibility'
+      tags:
+        - Prices
+      parameters:
+        - name: country
+          in: query
+          schema:
+            type: string
+            enum: [lt, ee, lv, fi]
+          description: 'Country code (default: lt)'
+      responses:
+        '200':
+          description: 'Latest price data'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      allOf:
+                        - $ref: '#/components/schemas/PriceData'
+                        - type: object
+                          properties:
+                            country:
+                              type: string
+                  meta:
+                    type: object
+                    properties:
+                      country:
+                        type: string
+                      count:
+                        type: integer
+                      timezone:
+                        type: string
+                      last_updated:
+                        type: string
+                        format: date-time
+              example:
+                success: true
+                data:
+                  - timestamp: 1750885200
+                    price: 75.0
+                    country: 'lt'
+                meta:
+                  country: 'lt'
+                  count: 1
+                  timezone: 'Europe/Vilnius'
+                  last_updated: '2025-06-26T00:15:30.024Z'
+        '404':
+          description: 'No price data found'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+components:
+  schemas:
+    Country:
+      type: object
+      properties:
+        code:
+          type: string
+          example: 'lt'
+        name:
+          type: string
+          example: 'Lithuania'
+    PriceData:
+      type: object
+      properties:
+        timestamp:
+          type: integer
+          description: 'Unix timestamp'
+          example: 1750885200
+        price:
+          type: number
+          description: 'Price in EUR/MWh'
+          example: 75.0
+        country:
+          type: string
+          description: 'Country code (optional, included in some responses)'
+          example: 'LT'
+    PriceMeta:
+      type: object
+      properties:
+        countries:
+          type: array
+          items:
+            type: string
+          example: ['LT']
+        date:
+          type: string
+          format: date
+          example: '2025-06-26'
+        hour:
+          type: string
+          example: '00:00'
+        timezone:
+          type: string
+          example: 'Europe/Vilnius'
+        timestamp_local:
+          type: integer
+          example: 1750885200
+        price_unit:
+          type: string
+          example: 'EUR/MWh'
+        data_type:
+          type: string
+          example: 'latest_published'
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: 'No price data found for the specified country'
+        code:
+          type: string
+          example: 'NO_DATA_FOUND'
+tags:
+  - name: Prices
+    description: 'Electricity price data endpoints'
+  - name: Health
+    description: 'System health and status endpoints'
+  - name: Countries
+    description: 'Country information endpoints' 

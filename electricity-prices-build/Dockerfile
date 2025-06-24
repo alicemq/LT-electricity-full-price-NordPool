@@ -8,7 +8,7 @@ ARG NODE_ENV=production
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
+# Install dependencies (including dev dependencies for build)
 RUN npm install
 
 # Copy source code

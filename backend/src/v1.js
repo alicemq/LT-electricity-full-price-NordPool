@@ -1,71 +1,24 @@
 import express from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
-import dotenv from 'dotenv';
 import moment from 'moment-timezone';
 import { getPriceData, getLatestPrice, getCurrentPrice, getAvailableCountries, getSettings, updateSetting, getCurrentHourPrice, getLatestPriceAll, getCurrentHourPriceAll } from './database.js';
-import v1Router from './v1.js';
 
-dotenv.config();
-
-// Configure moment timezone for user-facing operations
-moment.tz.setDefault("Europe/Vilnius");
-
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-// Middleware
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "https://unpkg.com"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://unpkg.com"],
-      imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'"],
-      fontSrc: ["'self'", "https://unpkg.com"],
-      objectSrc: ["'none'"],
-      mediaSrc: ["'self'"],
-      frameSrc: ["'none'"],
-    },
-  },
-}));
-app.use(cors({
-  origin: [
-    process.env.FRONTEND_URL || 'http://localhost:5173',
-    'http://localhost:8080',  // Swagger UI
-    'http://swagger-ui:8080'  // Swagger UI (Docker internal)
-  ],
-  credentials: true
-}));
-app.use(express.json());
-
-// Mount v1 API router
-app.use('/api/v1', v1Router);
+const router = express.Router();
 
 // Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
-    timestamp: new Date().toISOString(),
-    timezone: 'Europe/Vilnius'
-  });
-});
-
-// API Health check endpoint
-app.get('/api/health', (req, res) => {
+router.get('/health', (req, res) => {
   res.json({ 
     status: 'healthy',
     timestamp: new Date().toISOString(),
     services: {
       database: 'connected',
-      api: 'running'
+      api: 'running',
+      version: 'v1'
     }
   });
 });
 
 // Get available countries
-app.get('/api/countries', async (req, res) => {
+router.get('/countries', async (req, res) => {
   try {
     const countries = await getAvailableCountries();
     const countryData = countries.map(code => ({
@@ -92,7 +45,7 @@ app.get('/api/countries', async (req, res) => {
 });
 
 // Get latest price for a specific country (similar to Elering API)
-app.get('/api/nps/price/:country/latest', async (req, res) => {
+router.get('/nps/price/:country/latest', async (req, res) => {
   try {
     const country = req.params.country.toLowerCase();
     
@@ -151,10 +104,11 @@ app.get('/api/nps/price/:country/latest', async (req, res) => {
       res.json({
         data: [{
           timestamp: latestPrice.timestamp,
-          price: parseFloat(latestPrice.price)
+          price: parseFloat(latestPrice.price),
+          country: country.toUpperCase()
         }],
         meta: {
-          country: country.toUpperCase(),
+          countries: [country.toUpperCase()],
           date: priceDate.format('YYYY-MM-DD'),
           hour: priceDate.format('HH:00'),
           timezone: 'Europe/Vilnius',
@@ -174,7 +128,7 @@ app.get('/api/nps/price/:country/latest', async (req, res) => {
 });
 
 // Get current price for a specific country (current hour in Europe/Vilnius)
-app.get('/api/nps/price/:country/current', async (req, res) => {
+router.get('/nps/price/:country/current', async (req, res) => {
   try {
     const country = req.params.country.toLowerCase();
     
@@ -234,10 +188,11 @@ app.get('/api/nps/price/:country/current', async (req, res) => {
       res.json({
         data: [{
           timestamp: currentPrice.timestamp,
-          price: parseFloat(currentPrice.price)
+          price: parseFloat(currentPrice.price),
+          country: country.toUpperCase()
         }],
         meta: {
-          country: country.toUpperCase(),
+          countries: [country.toUpperCase()],
           date: priceDate.format('YYYY-MM-DD'),
           hour: priceDate.format('HH:00'),
           timezone: 'Europe/Vilnius',
@@ -258,8 +213,8 @@ app.get('/api/nps/price/:country/current', async (req, res) => {
   }
 });
 
-// Get price data for a specific date or date range (moved to /api/nps/prices)
-app.get('/api/nps/prices', async (req, res) => {
+// Get price data for a specific date or date range
+router.get('/nps/prices', async (req, res) => {
   try {
     let { date, start, end, country = 'lt' } = req.query;
     country = country.toLowerCase();
@@ -334,16 +289,16 @@ app.get('/api/nps/prices', async (req, res) => {
 });
 
 // Legacy endpoint for backward compatibility (redirects to new path)
-app.get('/api/prices', async (req, res) => {
+router.get('/prices', async (req, res) => {
   // Redirect to the new endpoint
   const query = { ...req.query };
   if (query.country) query.country = query.country.toLowerCase();
   const queryString = new URLSearchParams(query).toString();
-  res.redirect(`/api/nps/prices?${queryString}`);
+  res.redirect(`/nps/prices?${queryString}`);
 });
 
 // Get latest prices (compatibility endpoint)
-app.get('/api/latest', async (req, res) => {
+router.get('/latest', async (req, res) => {
   try {
     const { country = 'lt' } = req.query;
     const latestPrice = await getLatestPrice(country);
@@ -380,7 +335,7 @@ app.get('/api/latest', async (req, res) => {
 });
 
 // Get settings
-app.get('/api/settings', async (req, res) => {
+router.get('/settings', async (req, res) => {
   try {
     const settings = await getSettings();
     res.json(settings);
@@ -391,7 +346,7 @@ app.get('/api/settings', async (req, res) => {
 });
 
 // Update setting
-app.put('/api/settings/:key', async (req, res) => {
+router.put('/settings/:key', async (req, res) => {
   try {
     const { key } = req.params;
     const { value } = req.body;
@@ -409,7 +364,7 @@ app.put('/api/settings/:key', async (req, res) => {
 });
 
 // Get price configurations
-app.get('/api/configurations', async (req, res) => {
+router.get('/configurations', async (req, res) => {
   try {
     const { date, zone, plan } = req.query;
     
@@ -424,21 +379,4 @@ app.get('/api/configurations', async (req, res) => {
   }
 });
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ error: 'Something broke!' });
-});
-
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({ error: 'Not found' });
-});
-
-// Start server
-app.listen(PORT, () => {
-  console.log(`Backend API server running on port ${PORT}`);
-  console.log(`Health check: http://localhost:${PORT}/health`);
-  console.log(`API base: http://localhost:${PORT}/api`);
-  console.log(`NordPool API: http://localhost:${PORT}/api/nps`);
-}); 
+export default router; 

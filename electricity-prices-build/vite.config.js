@@ -17,19 +17,35 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/api': {
+      '/api/v1': {
         target: 'http://backend:3000',
         changeOrigin: true,
         secure: false,
+        rewrite: (path) => path.replace(/^\/api\/v1/, '/api/v1'),
         configure: (proxy, options) => {
           proxy.on('proxyReq', (proxyReq, req, res) => {
-            console.log(`[${new Date().toISOString()}] Proxying: ${req.method} ${req.url} -> ${options.target}${req.url}`);
+            console.log(`[${new Date().toISOString()}] Proxying to Backend: ${req.method} ${req.url} -> ${options.target}${proxyReq.path}`);
           });
           proxy.on('error', (err, req, res) => {
-            console.error(`[${new Date().toISOString()}] Proxy error:`, err.message);
+            console.error(`[${new Date().toISOString()}] Backend proxy error:`, err.message);
+          });
+        }
+      },
+      '/api': {
+        target: 'http://swagger-ui:8080/swagger',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api/, ''),
+        configure: (proxy, options) => {
+          proxy.on('proxyReq', (proxyReq, req, res) => {
+            console.log(`[${new Date().toISOString()}] Proxying to Swagger UI: ${req.method} ${req.url} -> ${options.target}${proxyReq.path}`);
+          });
+          proxy.on('error', (err, req, res) => {
+            console.error(`[${new Date().toISOString()}] Swagger UI proxy error:`, err.message);
           });
         }
       },
     }
   }
 })
+

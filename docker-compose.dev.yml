@@ -1,34 +1,54 @@
-services:
-  # Database service - expose for development
-  db:
-    ports:
-      - "5432:5432"
+# Development overrides
+version: '3.8'
 
-  # Backend API service - expose for development
+services:
+  # Override frontend for development
+  frontend:
+    build:
+      dockerfile: Dockerfile.dev
+    ports:
+      - "5173:5173"  # Vite dev server
+    environment:
+      VITE_API_BASE_URL: /api/v1
+      NODE_ENV: development
+    command: npm run dev -- --host 0.0.0.0
+    volumes:
+      - ./electricity-prices-build:/app
+      - /app/node_modules
+
+  # Override backend for development
   backend:
     ports:
-      - "3000:3000"
+      - "3000:3000"  # Expose backend for direct access
     environment:
       NODE_ENV: development
+      FRONTEND_URL: http://localhost:5173
     command: npm run dev
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
 
-  # Frontend service - development configuration
-  frontend:
-    environment:
-      NODE_ENV: development
-      VITE_API_BASE_URL: /api
-    command: npm run dev -- --host 0.0.0.0
+  # Override database for development
+  db:
     ports:
-      - "5173:5173"  # Only expose dev server port in development
+      - "5432:5432"  # Expose database for direct access
 
-  # Data sync service - development configuration
+  # Override data-sync for development
   data-sync:
     environment:
       NODE_ENV: development
     command: npm run dev
 
-  # Worker service - development configuration
+  # Override worker for development
   worker:
     environment:
       NODE_ENV: development
-    command: npm run dev 
+    command: npm run dev
+
+  # Swagger UI service for development
+  swagger-ui:
+    ports:
+      - "8080:8080"  # Expose Swagger UI
+    environment:
+      SWAGGER_JSON: /usr/share/nginx/html/api.yaml
+      BASE_URL: /api 
