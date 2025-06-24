@@ -15,8 +15,8 @@ export async function fetchPrices(date) {
     // Format date as YYYY-MM-DD for the new backend API
     const formattedDate = moment(date).format('YYYY-MM-DD');
     
-    // Use the new simplified API endpoint
-    const apiUrl = `${import.meta.env.VITE_API_BASE_URL}/prices?date=${formattedDate}&country=lt`;
+    // Use the new NordPool API endpoint
+    const apiUrl = `${import.meta.env.VITE_API_BASE_URL}/nps/prices?date=${formattedDate}&country=lt`;
 
     logApiCall(apiUrl);
     // Save settings to localStorage but don't send them to API

@@ -6,8 +6,8 @@ echo "🚀 Starting Electricity Prices in Development Mode..."
 # Copy development environment
 cp .env.development .env
 
-# Build and start services
-docker-compose --env-file .env.development up -d --build
+# Build and start services with development override
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml --env-file .env.development up -d --build
 
 echo "✅ Development environment started!"
 echo ""
@@ -22,7 +22,7 @@ echo "  - Backend (Express + nodemon)"
 echo "  - Data Sync (nodemon)"
 echo ""
 echo "📊 View logs:"
-echo "  docker-compose logs -f"
+echo "  docker-compose -f docker-compose.yml -f docker-compose.dev.yml logs -f"
 echo ""
 echo "🛑 Stop services:"
-echo "  docker-compose down" 
+echo "  docker-compose -f docker-compose.yml -f docker-compose.dev.yml down" 

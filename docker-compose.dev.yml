@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  # Database service - expose for development
+  db:
+    ports:
+      - "5432:5432"
+
+  # Backend API service - expose for development
+  backend:
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: development
+    command: npm run dev
+
+  # Frontend service - development configuration
+  frontend:
+    environment:
+      NODE_ENV: development
+      VITE_API_BASE_URL: /api
+    command: npm run dev -- --host 0.0.0.0
+    ports:
+      - "5173:5173"  # Only expose dev server port in development
+
+  # Data sync service - development configuration
+  data-sync:
+    environment:
+      NODE_ENV: development
+    command: npm run dev
+
+  # Worker service - development configuration
+  worker:
+    environment:
+      NODE_ENV: development
+    command: npm run dev 

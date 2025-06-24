@@ -1,4 +1,5 @@
 /electricity-prices
 /index.js
 /vue-project
-.history
+.history/
+backend/node_modules

@@ -4,7 +4,16 @@
 
 The Electricity Prices NordPool API provides access to historical and current electricity price data for Baltic countries (Lithuania, Estonia, Latvia, Finland) with DST-aware timestamp handling.
 
-**Base URL**: `http://localhost:3000/api`
+**Base URL**: 
+- **Production**: `https://yourdomain.com/api` (accessed through frontend proxy)
+- **Development**: `http://localhost:5173/api` (accessed through Vite proxy)
+
+## Architecture
+
+All API calls are routed through the frontend proxy:
+- **Production**: Nginx serves frontend and proxies `/api/*` requests to backend
+- **Development**: Vite dev server proxies `/api/*` requests to backend
+- **Backend**: Internal only, not directly accessible from internet
 
 ## Authentication
 
@@ -19,11 +28,17 @@ GET /api/health
 ```
 
 **Example:**
+
 ```bash
-curl "http://localhost:3000/api/health"
+# Production
+curl "https://yourdomain.com/api/health"
+
+# Development
+curl "http://localhost:5173/api/health"
 ```
 
 **Response:**
+
 ```json
 {
   "status": "healthy",
@@ -42,11 +57,17 @@ GET /api/countries
 ```
 
 **Example:**
+
 ```bash
-curl "http://localhost:3000/api/countries"
+# Production
+curl "https://yourdomain.com/api/countries"
+
+# Development
+curl "http://localhost:5173/api/countries"
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -74,78 +95,122 @@ curl "http://localhost:3000/api/countries"
 ### 3. NordPool API Endpoints
 
 #### Get Latest Price (Elering-style)
+
 ```http
 GET /api/nps/price/:country/latest
 ```
 
 **Parameters:**
-- `country` (path, required): Country code (lt, ee, lv, fi)
+
+- `country` (path, required): Country code (lt, ee, lv, fi, all) - case insensitive
 
 **Example:**
+
 ```bash
-curl "http://localhost:3000/api/nps/price/LT/latest"
+# Production
+curl "https://yourdomain.com/api/nps/price/LT/latest"
+
+# Development
+curl "http://localhost:5173/api/nps/price/LT/latest"
 ```
 
 **Response:**
+
 ```json
 {
-  "success": true,
   "data": [
     {
       "timestamp": 1750885200,
       "price": 75.0
     }
-  ]
+  ],
+  "meta": {
+    "country": "LT",
+    "date": "2025-06-26",
+    "hour": "00:00",
+    "timezone": "Europe/Vilnius",
+    "timestamp_local": 1750885200,
+    "price_unit": "EUR/MWh",
+    "data_type": "latest_published"
+  }
 }
 ```
 
 #### Get Current Price
+
 ```http
 GET /api/nps/price/:country/current
 ```
 
 **Parameters:**
-- `country` (path, required): Country code (lt, ee, lv, fi)
+
+- `country` (path, required): Country code (lt, ee, lv, fi, all) - case insensitive
 
 **Example:**
+
 ```bash
-curl "http://localhost:3000/api/nps/price/LT/current"
+# Production
+curl "https://yourdomain.com/api/nps/price/LT/current"
+
+# Development
+curl "http://localhost:5173/api/nps/price/LT/current"
 ```
 
 **Response:**
+
 ```json
 {
-  "success": true,
   "data": [
     {
       "timestamp": 1750885200,
       "price": 75.0
     }
-  ]
+  ],
+  "meta": {
+    "country": "LT",
+    "date": "2025-06-26",
+    "hour": "00:00",
+    "timezone": "Europe/Vilnius",
+    "timestamp_local": 1750885200,
+    "price_unit": "EUR/MWh",
+    "data_type": "current_hour",
+    "current_time_local": "2025-06-26 00:15:30",
+    "is_current_hour": true
+  }
 }
 ```
 
 #### Get Price Data (Date Range)
+
 ```http
 GET /api/nps/prices
 ```
 
 **Parameters:**
+
 - `date` (query, optional): Single date in YYYY-MM-DD format
 - `start` (query, optional): Start date in YYYY-MM-DD format
 - `end` (query, optional): End date in YYYY-MM-DD format
 - `country` (query, optional): Country code (lt, ee, lv, fi). Default: lt
 
 **Examples:**
-```bash
-# Single date
-curl "http://localhost:3000/api/nps/prices?date=2025-06-24&country=lt"
 
-# Date range
-curl "http://localhost:3000/api/nps/prices?start=2025-06-20&end=2025-06-24&country=lt"
+```bash
+# Single date - Production
+curl "https://yourdomain.com/api/nps/prices?date=2025-06-24&country=lt"
+
+# Single date - Development
+curl "http://localhost:5173/api/nps/prices?date=2025-06-24&country=lt"
+
+# Date range - Production
+curl "https://yourdomain.com/api/nps/prices?start=2025-06-20&end=2025-06-24&country=lt"
+
+# Date range - Development
+curl "http://localhost:5173/api/nps/prices?start=2025-06-20&end=2025-06-24&country=lt"
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -170,22 +235,144 @@ curl "http://localhost:3000/api/nps/prices?start=2025-06-20&end=2025-06-24&count
 }
 ```
 
-### 4. Compatibility Endpoints
+### 4. All Countries Endpoints
+
+#### Get Latest Prices for All Countries
+
+```http
+GET /api/nps/price/all/latest
+```
+
+**Example:**
+
+```bash
+# Production
+curl "https://yourdomain.com/api/nps/price/all/latest"
+
+# Development
+curl "http://localhost:5173/api/nps/price/all/latest"
+```
+
+**Response:**
+
+```json
+{
+  "data": [
+    {
+      "timestamp": 1750885200,
+      "price": 75.0,
+      "country": "LT"
+    },
+    {
+      "timestamp": 1750885200,
+      "price": 68.5,
+      "country": "EE"
+    },
+    {
+      "timestamp": 1750885200,
+      "price": 72.1,
+      "country": "LV"
+    },
+    {
+      "timestamp": 1750885200,
+      "price": 65.3,
+      "country": "FI"
+    }
+  ],
+  "meta": {
+    "countries": ["LT", "EE", "LV", "FI"],
+    "date": "2025-06-26",
+    "hour": "00:00",
+    "timezone": "Europe/Vilnius",
+    "timestamp_local": 1750885200,
+    "price_unit": "EUR/MWh",
+    "data_type": "latest_published_all",
+    "count": 4
+  }
+}
+```
+
+#### Get Current Prices for All Countries
+
+```http
+GET /api/nps/price/all/current
+```
+
+**Example:**
+
+```bash
+# Production
+curl "https://yourdomain.com/api/nps/price/all/current"
+
+# Development
+curl "http://localhost:5173/api/nps/price/all/current"
+```
+
+**Response:**
+
+```json
+{
+  "data": [
+    {
+      "timestamp": 1750885200,
+      "price": 75.0,
+      "country": "LT"
+    },
+    {
+      "timestamp": 1750885200,
+      "price": 68.5,
+      "country": "EE"
+    },
+    {
+      "timestamp": 1750885200,
+      "price": 72.1,
+      "country": "LV"
+    },
+    {
+      "timestamp": 1750885200,
+      "price": 65.3,
+      "country": "FI"
+    }
+  ],
+  "meta": {
+    "countries": ["LT", "EE", "LV", "FI"],
+    "date": "2025-06-26",
+    "hour": "00:00",
+    "timezone": "Europe/Vilnius",
+    "timestamp_local": 1750885200,
+    "price_unit": "EUR/MWh",
+    "data_type": "current_hour_all",
+    "current_time_local": "2025-06-26 00:15:30",
+    "is_current_hour": true,
+    "count": 4
+  }
+}
+```
+
+### 5. Compatibility Endpoints
 
 #### Get Latest Prices (Legacy)
+
 ```http
 GET /api/latest
 ```
 
 **Parameters:**
+
 - `country` (query, optional): Country code (lt, ee, lv, fi). Default: lt
 
 **Example:**
+
 ```bash
-curl "http://localhost:3000/api/latest?country=lt"
+# Production
+curl "https://yourdomain.com/api/latest?country=lt"
+
+# Development
+curl "http://localhost:5173/api/latest?country=lt"
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -206,15 +393,51 @@ curl "http://localhost:3000/api/latest?country=lt"
 ```
 
 #### Get Price Data (Legacy - Redirects to new endpoint)
+
 ```http
 GET /api/prices
 ```
 
 **Note**: This endpoint redirects to `/api/nps/prices` for backward compatibility.
 
+### 6. Documentation Endpoints
+
+#### Swagger UI
+
+```http
+GET /api/docs
+```
+
+**Example:**
+
+```bash
+# Production
+curl "https://yourdomain.com/api/docs"
+
+# Development
+curl "http://localhost:5173/api/docs"
+```
+
+#### OpenAPI Specification
+
+```http
+GET /api/openapi.yaml
+```
+
+**Example:**
+
+```bash
+# Production
+curl "https://yourdomain.com/api/openapi.yaml"
+
+# Development
+curl "http://localhost:5173/api/openapi.yaml"
+```
+
 ## Error Responses
 
 ### 400 Bad Request
+
 ```json
 {
   "success": false,
@@ -224,6 +447,7 @@ GET /api/prices
 ```
 
 ### 404 Not Found
+
 ```json
 {
   "success": false,
@@ -233,6 +457,7 @@ GET /api/prices
 ```
 
 ### 500 Internal Server Error
+
 ```json
 {
   "success": false,
@@ -243,132 +468,84 @@ GET /api/prices
 ## Timezone Handling
 
 ### Data Storage
-- All data is stored in UTC for consistency
-- Database queries use UTC timestamps
+
+- All timestamps are stored in UTC in the database
+- NordPool day boundaries: 22:00 UTC to 21:59 UTC (next day)
+- DST transitions are handled automatically
 
 ### API Responses
-- **NordPool endpoints** (`/api/nps/*`): Return Unix timestamps (UTC)
-- **Compatibility endpoints** (`/api/latest`, `/api/prices`): Return timezone-aware timestamps
-- DST (Daylight Saving Time) is automatically handled
 
-### Date Parameters
-- Date parameters are interpreted in Europe/Vilnius timezone
-- Use YYYY-MM-DD format for dates
-- The API automatically handles DST transitions
+- All timestamps in responses are converted to Europe/Vilnius timezone
+- Metadata includes timezone information
+- Current time comparisons use Europe/Vilnius timezone
 
-## API Structure Comparison
+## Country Codes
 
-### Elering API (Reference)
-```
-https://dashboard.elering.ee/api/nps/price/LT/latest
-```
+### Supported Countries
+- `lt` - Lithuania
+- `ee` - Estonia  
+- `lv` - Latvia
+- `fi` - Finland
+- `all` - All countries (pseudo country for batch requests)
 
-### Our API (Compatible)
-```
-http://localhost:3000/api/nps/price/LT/latest
-```
-
-### Additional Features
-- **Current price endpoint**: `/api/nps/price/:country/current`
-- **Date range queries**: `/api/nps/prices?start=2025-06-20&end=2025-06-24`
-- **Multi-country support**: All Baltic countries (LT, EE, LV, FI)
-- **Enhanced metadata**: Additional information in responses
+### Case Insensitivity
+All country codes are case-insensitive:
+- `LT`, `lt`, `Lt`, `lT` all work for Lithuania
+- `ALL`, `all`, `All` all work for all countries
 
 ## Rate Limiting
 
-Currently, no rate limiting is implemented. However, it's recommended to:
-- Cache responses when possible
-- Use date ranges instead of multiple single-date requests
-- Implement appropriate delays between requests in client applications
+Currently, no rate limiting is implemented. Consider implementing rate limiting for production use.
 
-## Data Format
+## CORS
 
-### Price Data Structure (NordPool endpoints)
-```json
-{
-  "timestamp": 1750885200,  // Unix timestamp (UTC)
-  "price": 75.0             // Price in EUR/MWh
-}
-```
+CORS is handled by the frontend proxy:
+- **Production**: Nginx handles CORS headers
+- **Development**: Vite proxy handles CORS headers
 
-### Price Data Structure (Compatibility endpoints)
-```json
-{
-  "timestamp": 1750885200,  // Unix timestamp (Europe/Vilnius)
-  "price": 75.0,            // Price in EUR/MWh
-  "country": "lt"           // Country code
-}
-```
+## Monitoring
 
-### Metadata Structure
-```json
-{
-  "date": "2025-06-24",                      // Requested date
-  "country": "lt",                           // Requested country
-  "count": 24,                               // Number of records
-  "timezone": "Europe/Vilnius"               // Response timezone
-}
-```
+### Proxy Logging
+- **Development**: Vite proxy logs all API calls with timestamps
+- **Production**: Nginx access logs for all requests
+- **Format**: `[timestamp] Proxying: METHOD /path -> target`
+
+### Health Monitoring
+- Use `/api/health` endpoint for system health checks
+- Monitor proxy logs for API call patterns
+- Check backend logs for error rates and response times
 
 ## Examples
 
-### Frontend Integration (JavaScript)
+### Frontend Integration
+
 ```javascript
-// Fetch latest price for Lithuania (Elering-style)
-const response = await fetch('/api/nps/price/LT/latest');
+// Using fetch API
+const response = await fetch('/api/nps/price/lt/latest');
 const data = await response.json();
 
-if (data.success) {
-  const latestPrice = data.data[0];
-  console.log(`Latest price: ${latestPrice.price} EUR/MWh at ${new Date(latestPrice.timestamp * 1000)}`);
-}
-
-// Fetch today's prices
-const response = await fetch('/api/nps/prices?date=2025-06-24&country=lt');
-const data = await response.json();
-
-if (data.success) {
-  data.data.lt.forEach(price => {
-    console.log(`${new Date(price.timestamp * 1000)}: ${price.price} EUR/MWh`);
-  });
-}
+// Using axios
+const response = await axios.get('/api/nps/price/lt/latest');
+const data = response.data;
 ```
 
-### Historical Data Analysis
-```javascript
-// Fetch last week's prices
-const response = await fetch('/api/nps/prices?start=2025-06-17&end=2025-06-24&country=lt');
-const data = await response.json();
+### cURL Examples
 
-if (data.success) {
-  const prices = data.data.lt;
-  const avgPrice = prices.reduce((sum, price) => sum + price.price, 0) / prices.length;
-  console.log(`Average price: ${avgPrice.toFixed(2)} EUR/MWh`);
-}
+```bash
+# Get current prices for all countries
+curl "https://yourdomain.com/api/nps/price/all/current"
+
+# Get historical data for Lithuania
+curl "https://yourdomain.com/api/nps/prices?date=2025-06-24&country=lt"
+
+# Get latest price for Estonia
+curl "https://yourdomain.com/api/nps/price/ee/latest"
+
+# Check system health
+curl "https://yourdomain.com/api/health"
 ```
-
-## Migration Notes
-
-### From Old API to New API
-- **Old**: `/api/prices?date=2025-06-24`
-- **New**: `/api/nps/prices?date=2025-06-24`
-- **Backward compatibility**: Old endpoints redirect to new ones
-
-### New Features
-- **Latest price endpoint**: `/api/nps/price/:country/latest`
-- **Current price endpoint**: `/api/nps/price/:country/current`
-- **Enhanced error handling**: Consistent error codes and messages
-- **Better metadata**: More detailed response information
-
-## Support
-
-For API support and questions:
-- Check the health endpoint for system status
-- Review the sync logs for data availability
-- Monitor the worker service for automated sync status
 
 ---
 
-**API Version**: 2.0  
 **Last Updated**: June 2024  
-**Compatibility**: Elering API compatible 
+**Status**: ✅ **PRODUCTION READY** with secure proxy architecture 

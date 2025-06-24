@@ -9,31 +9,56 @@ A modern, containerized electricity price monitoring system for Baltic countries
 - Node.js 18+ (for development)
 
 ### **Start the System**
+
+#### **Production Mode (Recommended)**
 ```bash
 # Clone the repository
 git clone <repository-url>
 cd LT-electricity-full-price-NordPool
 
-# Start all services
-docker-compose up -d
+# Start in production mode (secure architecture)
+./scripts/prod.sh
 
-# View logs
-docker-compose logs -f
+# Or manually:
+docker-compose --env-file .env.production up -d --build
+```
+
+#### **Development Mode**
+```bash
+# Start in development mode (exposed services for debugging)
+./scripts/dev.sh
+
+# Or manually:
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml --env-file .env.development up -d --build
 ```
 
 ### **Access the Application**
-- **Frontend**: http://localhost:5173
-- **Backend API**: http://localhost:3000
+
+#### **Production Mode**
+- **Frontend**: http://localhost:80 (Nginx with API proxy)
+- **Backend**: Internal only (accessed via frontend proxy)
+- **Database**: Internal only
+
+#### **Development Mode**
+- **Frontend**: http://localhost:5173 (Vite dev server)
+- **Backend**: http://localhost:3000 (Express with hot-reload)
 - **Database**: localhost:5432
 
 ## 📊 **System Overview**
 
 ### **Architecture**
-- **Frontend**: Vue.js 3 application
-- **Backend**: Node.js/Express API
+- **Frontend**: Vue.js 3 application with Nginx proxy
+- **Backend**: Node.js/Express API (internal only)
 - **Database**: PostgreSQL with DST-aware timestamps
 - **Data Sync**: Automated service with NordPool-aware scheduling
 - **Worker**: Scheduled synchronization service
+
+### **Security Architecture**
+- ✅ **Frontend proxy**: All API calls routed through frontend
+- ✅ **Backend isolation**: Backend not exposed to internet
+- ✅ **Database isolation**: Database not exposed to internet
+- ✅ **CORS handling**: Proper CORS configuration in proxy
+- ✅ **Production hardening**: Security headers and optimizations
 
 ### **Features**
 - ✅ **Multi-country support** (LT, EE, LV, FI)
@@ -42,6 +67,7 @@ docker-compose logs -f
 - ✅ **Automated scheduling** during NordPool hours
 - ✅ **Containerized deployment** for easy scaling
 - ✅ **Historical data** from 2012-07-01 to present
+- ✅ **Secure production architecture** with proxy routing
 
 ## 🔧 **Services**
 
@@ -49,16 +75,20 @@ docker-compose logs -f
 - Stores historical price data with proper indexing
 - DST-aware timestamp handling
 - Sync logs and system configuration
+- **Production**: Internal only, not exposed to internet
 
 ### **Backend API (Node.js/Express)**
 - RESTful API endpoints for price data
 - DST conversion for user-friendly display
 - Error handling and validation
+- **Production**: Internal only, accessed via frontend proxy
 
-### **Frontend (Vue.js 3)**
+### **Frontend (Vue.js 3 + Nginx)**
 - Reactive UI for price display
 - Date range selection
 - Multi-country data visualization
+- **Production**: Acts as proxy to backend API
+- **Development**: Vite dev server with proxy configuration
 
 ### **Data Sync Service**
 - Manual synchronization and historical imports
@@ -74,8 +104,11 @@ docker-compose logs -f
 
 ### **Manual Data Sync**
 ```bash
-# Sync all countries (last 7 days)
+# Production mode
 docker-compose run data-sync
+
+# Development mode
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml run data-sync
 
 # Sync specific country
 docker-compose run data-sync lt
@@ -87,23 +120,36 @@ docker-compose run data-sync historical lt 2024-01-01 2024-12-31
 ### **Development Mode**
 ```bash
 # Start in development mode
-NODE_ENV=development docker-compose up -d
+./scripts/dev.sh
 
-# Frontend development
+# Frontend development (hot-reload)
 cd electricity-prices-build && npm run dev
 
-# Backend development
+# Backend development (hot-reload)
 cd backend && npm run dev
+
+# View logs
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml logs -f
 ```
 
 ### **API Endpoints**
+All API endpoints are accessed through the frontend proxy:
+
 ```javascript
-GET /api/prices/:date          // Single date prices
-GET /api/prices/:start/:end    // Date range prices
-GET /api/latest               // Latest available prices
-GET /api/countries            // Available countries
-GET /api/health               // System health check
+GET /api/nps/prices/:date          // Single date prices
+GET /api/nps/prices/:start/:end    // Date range prices
+GET /api/nps/price/:country/latest // Latest price (Elering-style)
+GET /api/nps/price/:country/current // Current hour price
+GET /api/nps/price/ALL/latest      // Latest prices for all countries
+GET /api/nps/price/ALL/current     // Current hour prices for all countries
+GET /api/latest                    // Latest available prices
+GET /api/countries                 // Available countries
+GET /api/health                    // System health check
+GET /api/docs                      // Swagger UI documentation
+GET /api/openapi.yaml              // OpenAPI specification
 ```
+
+**Country Codes**: `lt`, `ee`, `lv`, `fi`, `all` (case insensitive)
 
 ## 📈 **Performance**
 
@@ -116,13 +162,41 @@ GET /api/health               // System health check
 - **Response Time**: < 100ms for typical queries
 - **Throughput**: Handles concurrent requests efficiently
 - **Caching**: Database-based caching eliminates external API calls
+- **Proxy Overhead**: Minimal (< 5ms additional latency)
 
 ## 🏗 **Architecture**
 
+### **Production Architecture (Secure)**
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Frontend (Nginx)                        │
+│                    Port: 80 (Public)                       │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────┐ │
+│  │   Vue.js App    │  │   API Proxy     │  │   Swagger   │ │
+│  │   (Static)      │  │   (/api/*)      │  │   UI        │ │
+│  └─────────────────┘  └─────────────────┘  └─────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+                                │
+                                ▼
+                       ┌─────────────────┐
+                       │   Backend API   │
+                       │   (Internal)    │
+                       │   Port: 3000    │
+                       └─────────────────┘
+                                │
+                                ▼
+                       ┌─────────────────┐
+                       │   Database      │
+                       │   (Internal)    │
+                       │   Port: 5432    │
+                       └─────────────────┘
+```
+
+### **Development Architecture (Exposed)**
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   Frontend      │    │   Backend API   │    │   Database      │
-│   (Vue.js 3)    │◄──►│   (Node.js)     │◄──►│   (PostgreSQL)  │
+│   (Vite)        │◄──►│   (Express)     │◄──►│   (PostgreSQL)  │
 │   Port: 5173    │    │   Port: 3000    │    │   Port: 5432    │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
                                 ▲                       ▲
@@ -141,6 +215,7 @@ GET /api/health               // System health check
 - Admin panel for data management
 - TypeScript migration for type safety
 - Advanced analytics and reporting
+- Swagger UI integration for API documentation
 
 ## 📞 **Support**
 
@@ -148,20 +223,35 @@ GET /api/health               // System health check
 - Database sync logs for data integrity
 - API response times and error rates
 - Container health and resource usage
+- Proxy performance metrics
 
 ### **Troubleshooting**
+
+#### **Production Mode**
 ```bash
 # Check service status
 docker-compose ps
 
 # View service logs
-docker-compose logs [service-name]
+docker-compose logs -f
 
 # Restart services
 docker-compose restart [service-name]
 
 # Rebuild containers
 docker-compose build --no-cache
+```
+
+#### **Development Mode**
+```bash
+# Check service status
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml ps
+
+# View service logs
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml logs -f
+
+# Restart services
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml restart [service-name]
 ```
 
 ## 📄 **Documentation**
@@ -177,6 +267,8 @@ docker-compose build --no-cache
 - ✅ **Multi-country support** with single API call optimization
 - ✅ **Production-ready system** with automated scheduling
 - ✅ **Containerized deployment** for easy scaling and maintenance
+- ✅ **Secure production architecture** with frontend proxy routing
+- ✅ **Development-friendly setup** with hot-reload and debugging
 
 ---
 

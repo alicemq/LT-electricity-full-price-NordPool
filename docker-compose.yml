@@ -12,13 +12,14 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./database/init:/docker-entrypoint-initdb.d
-    ports:
-      - "5432:5432"
+    # Database should not be exposed to the internet in production
+    # ports:
+    #   - "5432:5432"
     networks:
       - electricity_network
     restart: unless-stopped
 
-  # Backend API service
+  # Backend API service (internal only)
   backend:
     build:
       context: ./backend
@@ -33,8 +34,9 @@ services:
     volumes:
       - ./backend:/app
       - /app/node_modules
-    ports:
-      - "3000:3000"
+    # Backend is not exposed to the internet - only accessible through frontend proxy
+    # ports:
+    #   - "3000:3000"
     depends_on:
       - db
     networks:
@@ -42,7 +44,7 @@ services:
     restart: unless-stopped
     command: ${BACKEND_COMMAND:-node src/index.js}
 
-  # Frontend service
+  # Frontend service (acts as proxy to backend)
   frontend:
     build:
       context: ./electricity-prices-build
@@ -55,9 +57,10 @@ services:
       - ./electricity-prices-build:/app
       - /app/node_modules
     ports:
-      - "5173:5173"
+      - "80:80"  # Production: serve on port 80
+      - "5173:5173"  # Development: keep dev server port
     environment:
-      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:3000/api}
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api}  # Use relative path for proxy
       NODE_ENV: ${NODE_ENV:-production}
     depends_on:
       - backend

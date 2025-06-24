@@ -18,12 +18,15 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://dashboard.elering.ee',
+        target: 'http://backend:3000',
         changeOrigin: true,
         secure: false,
         configure: (proxy, options) => {
           proxy.on('proxyReq', (proxyReq, req, res) => {
             console.log(`[${new Date().toISOString()}] Proxying: ${req.method} ${req.url} -> ${options.target}${req.url}`);
+          });
+          proxy.on('error', (err, req, res) => {
+            console.error(`[${new Date().toISOString()}] Proxy error:`, err.message);
           });
         }
       },
