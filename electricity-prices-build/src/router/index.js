@@ -30,14 +30,6 @@ const router = createRouter({
       path: '/upcoming',
       name: 'upcoming',
       component: () => import('../views/UpcomingPricesView.vue')
-    },
-    {
-      path: '/swagger',
-      name: 'swagger',
-      component: () => import('../views/SwaggerView.vue'),
-      meta: {
-        title: 'API Documentation'
-      }
     }
   ]
 })

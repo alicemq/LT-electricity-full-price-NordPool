@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 2,
+  "dockerfilePath": "./Dockerfile",
+  "buildArguments": {
+    "NODE_ENV": "production"
+  },
+  "healthCheck": {
+    "httpPath": "/api/v1/health",
+    "httpPort": 80,
+    "httpMethod": "GET",
+    "initialDelaySeconds": 60,
+    "intervalSeconds": 30,
+    "timeoutSeconds": 10,
+    "maxRetries": 3
+  },
+  "expose": {
+    "httpPort": 80,
+    "httpAuth": false
+  },
+  "environmentVariables": {
+    "NODE_ENV": "production",
+    "DATABASE_URL": "postgresql://electricity_user:electricity_password@postgres:5432/electricity_prices",
+    "ELERING_API_URL": "https://dashboard.elering.ee/api/nps/price",
+    "FRONTEND_URL": "https://${CAPTAIN_DOMAIN}",
+    "POSTGRES_DB": "electricity_prices",
+    "POSTGRES_USER": "electricity_user",
+    "POSTGRES_PASSWORD": "electricity_password"
+  },
+  "volumes": [
+    {
+      "containerPath": "/var/lib/postgresql/data",
+      "hostPath": "/captain/data/postgres"
+    }
+  ],
+  "notExposeAsWebApp": false,
+  "containerHttpPort": 80,
+  "description": "Electricity Prices NordPool - Modern containerized electricity price monitoring system for Baltic countries (Lithuania, Estonia, Latvia, Finland) with automated data synchronization from the Elering NordPool API.",
+  "imageName": "electricity-prices-nordpool",
+  "imageTag": "latest",
+  "instanceCount": 1,
+  "ports": [],
+  "customDomain": "${CAPTAIN_DOMAIN}"
+} 
