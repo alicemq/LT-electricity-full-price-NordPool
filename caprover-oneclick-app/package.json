@@ -1,0 +1,59 @@
+{
+  "name": "electricity-prices-nordpool-oneclick",
+  "version": "1.0.0",
+  "description": "CapRover one-click app template for Electricity Prices NordPool",
+  "main": "install.sh",
+  "scripts": {
+    "build": "echo 'Build handled by Dockerfile'",
+    "start": "./install.sh",
+    "test": "echo 'Tests not applicable for one-click app'",
+    "validate": "node -e \"const fs=require('fs');const config=JSON.parse(fs.readFileSync('one-click-app.json'));console.log('✅ One-click app configuration is valid');\""
+  },
+  "keywords": [
+    "caprover",
+    "one-click-app",
+    "electricity",
+    "prices",
+    "nordpool",
+    "baltic",
+    "monitoring",
+    "api",
+    "vue",
+    "nodejs",
+    "postgresql",
+    "docker"
+  ],
+  "author": "Electricity Prices NordPool Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-repo/electricity-prices-nordpool.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-repo/electricity-prices-nordpool/issues"
+  },
+  "homepage": "https://github.com/your-repo/electricity-prices-nordpool#readme",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "caprover": {
+    "version": "4",
+    "template": "one-click-app",
+    "category": "monitoring",
+    "tags": [
+      "electricity",
+      "prices",
+      "nordpool",
+      "baltic",
+      "monitoring",
+      "api",
+      "vue",
+      "nodejs",
+      "postgresql",
+      "docker"
+    ]
+  }
+} 

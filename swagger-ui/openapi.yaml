@@ -2,9 +2,47 @@ openapi: 3.0.3
 info:
   title: 'Electricity Prices NordPool API'
   version: '1.0.0'
-  description: 'API for electricity price data from NordPool via Elering API'
+  description: |
+    # Electricity Prices NordPool API
+    
+    Comprehensive API for accessing electricity price data from NordPool via Elering API.
+    
+    ## Features
+    - **Multi-country support**: Lithuania (LT), Estonia (EE), Latvia (LV), Finland (FI)
+    - **DST-aware timestamps**: Proper handling of daylight saving time transitions
+    - **Historical data**: Access to price data from 2012-07-01 to present
+    - **Real-time updates**: Latest clearing prices from NordPool
+    - **Secure architecture**: All requests routed through frontend proxy
+    
+    ## Architecture
+    - **Production**: All API calls go through frontend proxy at `/api/v1/*`
+    - **Development**: Direct backend access available for debugging
+    - **Security**: Backend services not exposed to internet
+    
+    ## Data Sources
+    - **Primary**: Elering API (https://dashboard.elering.ee/api/nps/price)
+    - **Storage**: PostgreSQL database with optimized queries
+    - **Sync**: Automated every 30 minutes during NordPool hours
+    
+    ## Timezone Handling
+    - **Market timezone**: Europe/Vilnius (CET/CEST)
+    - **NordPool boundaries**: 22:00 UTC to 21:59 UTC
+    - **DST conversion**: Automatic handling of daylight saving time
+    
+    ## Rate Limits
+    - **No current limits**: API designed for public access
+    - **Caching**: Database-based caching for optimal performance
+    - **Monitoring**: All requests logged for analytics
+    
   contact:
     name: 'Electricity Prices Team'
+    url: 'https://github.com/your-repo/electricity-prices'
+  license:
+    name: 'MIT'
+    url: 'https://opensource.org/licenses/MIT'
+  externalDocs:
+    description: 'Project Documentation'
+    url: 'https://github.com/your-repo/electricity-prices/blob/main/README.md'
 servers:
   - url: 'http://localhost:3000/api'
     description: 'Development API Server'
@@ -174,7 +212,24 @@ paths:
   /nps/prices:
     get:
       summary: 'Get price data for date or date range'
-      description: 'Get electricity prices for a specific date or date range'
+      description: |
+        Retrieve electricity prices for a specific date or date range.
+        
+        **Features:**
+        - Single date or date range queries
+        - Multi-country support (LT, EE, LV, FI)
+        - DST-aware timestamp handling
+        - Optimized database queries
+        
+        **Usage Examples:**
+        - Single day: `?date=2025-06-26&country=lt`
+        - Date range: `?start=2025-06-01&end=2025-06-30&country=ee`
+        - All countries: `?date=2025-06-26` (defaults to LT)
+        
+        **Response Format:**
+        - 24 hourly prices per day
+        - Prices in EUR/MWh
+        - Unix timestamps for easy processing
       tags:
         - Prices
       parameters:
@@ -183,25 +238,29 @@ paths:
           schema:
             type: string
             format: date
-          description: 'Single date (YYYY-MM-DD)'
+            example: '2025-06-26'
+          description: 'Single date in YYYY-MM-DD format (mutually exclusive with start/end)'
         - name: start
           in: query
           schema:
             type: string
             format: date
-          description: 'Start date for range (YYYY-MM-DD)'
+            example: '2025-06-01'
+          description: 'Start date for range in YYYY-MM-DD format (requires end parameter)'
         - name: end
           in: query
           schema:
             type: string
             format: date
-          description: 'End date for range (YYYY-MM-DD)'
+            example: '2025-06-30'
+          description: 'End date for range in YYYY-MM-DD format (requires start parameter)'
         - name: country
           in: query
           schema:
             type: string
             enum: [lt, ee, lv, fi]
-          description: 'Country code (default: lt)'
+            default: lt
+          description: 'Country code (defaults to Lithuania if not specified)'
       responses:
         '200':
           description: 'Price data for the specified period'
@@ -212,48 +271,102 @@ paths:
                 properties:
                   success:
                     type: boolean
+                    example: true
                   data:
                     type: object
                     additionalProperties:
                       type: array
                       items:
                         $ref: '#/components/schemas/PriceData'
+                    description: 'Price data organized by country code'
                   meta:
                     type: object
                     properties:
                       date:
                         type: string
+                        example: '2025-06-26'
                       country:
                         type: string
+                        example: 'lt'
                       count:
                         type: integer
+                        example: 24
                       timezone:
                         type: string
-              example:
-                success: true
-                data:
-                  lt:
-                    - timestamp: 1750885200
-                      price: 75.0
-                    - timestamp: 1750888800
-                      price: 68.5
-                meta:
-                  date: '2025-06-26'
-                  country: 'lt'
-                  count: 2
-                  timezone: 'Europe/Vilnius'
+                        example: 'Europe/Vilnius'
+                      total_records:
+                        type: integer
+                        example: 24
+                      date_range:
+                        type: object
+                        properties:
+                          start:
+                            type: string
+                            example: '2025-06-26'
+                          end:
+                            type: string
+                            example: '2025-06-26'
+              examples:
+                single_day:
+                  summary: 'Single day prices for Lithuania'
+                  value:
+                    success: true
+                    data:
+                      lt:
+                        - timestamp: 1750885200
+                          price: 75.0
+                        - timestamp: 1750888800
+                          price: 68.5
+                        - timestamp: 1750892400
+                          price: 72.1
+                    meta:
+                      date: '2025-06-26'
+                      country: 'lt'
+                      count: 3
+                      timezone: 'Europe/Vilnius'
+                      total_records: 24
+                      date_range:
+                        start: '2025-06-26'
+                        end: '2025-06-26'
+                date_range:
+                  summary: 'Date range prices for Estonia'
+                  value:
+                    success: true
+                    data:
+                      ee:
+                        - timestamp: 1750885200
+                          price: 78.2
+                        - timestamp: 1750888800
+                          price: 71.3
+                    meta:
+                      date: '2025-06-26'
+                      country: 'ee'
+                      count: 2
+                      timezone: 'Europe/Vilnius'
+                      total_records: 48
+                      date_range:
+                        start: '2025-06-26'
+                        end: '2025-06-27'
         '400':
-          description: 'Invalid parameters'
+          description: 'Invalid parameters (missing required parameters or invalid date format)'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+              example:
+                success: false
+                error: 'Invalid date format. Use YYYY-MM-DD format.'
+                code: 'INVALID_DATE_FORMAT'
         '404':
-          description: 'No price data found'
+          description: 'No price data found for the specified parameters'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+              example:
+                success: false
+                error: 'No price data found for the specified date range'
+                code: 'NO_DATA_FOUND'
   /latest:
     get:
       summary: 'Get latest price (legacy endpoint)'
@@ -319,67 +432,156 @@ components:
   schemas:
     Country:
       type: object
+      description: 'Country information for electricity price data'
       properties:
         code:
           type: string
+          description: 'ISO 3166-1 alpha-2 country code'
           example: 'lt'
+          enum: ['lt', 'ee', 'lv', 'fi']
         name:
           type: string
+          description: 'Full country name'
           example: 'Lithuania'
+          enum: ['Lithuania', 'Estonia', 'Latvia', 'Finland']
+      required:
+        - code
+        - name
+      example:
+        code: 'lt'
+        name: 'Lithuania'
     PriceData:
       type: object
+      description: 'Individual electricity price data point'
       properties:
         timestamp:
           type: integer
-          description: 'Unix timestamp'
+          description: 'Unix timestamp in seconds (UTC)'
           example: 1750885200
+          minimum: 0
         price:
           type: number
-          description: 'Price in EUR/MWh'
+          description: 'Electricity price in EUR/MWh'
           example: 75.0
+          minimum: 0
+          format: float
         country:
           type: string
-          description: 'Country code (optional, included in some responses)'
+          description: 'Country code (included in some responses)'
           example: 'LT'
+          enum: ['LT', 'EE', 'LV', 'FI']
+      required:
+        - timestamp
+        - price
+      example:
+        timestamp: 1750885200
+        price: 75.0
+        country: 'LT'
     PriceMeta:
       type: object
+      description: 'Metadata for price data responses'
       properties:
         countries:
           type: array
           items:
             type: string
+            enum: ['LT', 'EE', 'LV', 'FI']
+          description: 'List of countries in the response'
           example: ['LT']
         date:
           type: string
           format: date
+          description: 'Date in YYYY-MM-DD format'
           example: '2025-06-26'
         hour:
           type: string
+          description: 'Hour in HH:MM format'
           example: '00:00'
+          pattern: '^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$'
         timezone:
           type: string
+          description: 'Timezone used for timestamps'
           example: 'Europe/Vilnius'
+          default: 'Europe/Vilnius'
         timestamp_local:
           type: integer
+          description: 'Local timestamp in seconds'
           example: 1750885200
+          minimum: 0
         price_unit:
           type: string
+          description: 'Price unit'
           example: 'EUR/MWh'
+          default: 'EUR/MWh'
         data_type:
           type: string
+          description: 'Type of price data'
           example: 'latest_published'
+          enum: ['latest_published', 'current_hour', 'historical']
+        current_time_local:
+          type: string
+          format: date-time
+          description: 'Current local time (for current hour endpoints)'
+          example: '2025-06-26T00:15:30.024Z'
+        is_current_hour:
+          type: boolean
+          description: 'Whether the data represents the current hour'
+          example: true
+      required:
+        - countries
+        - date
+        - hour
+        - timezone
+        - timestamp_local
+        - price_unit
+        - data_type
+      example:
+        countries: ['LT']
+        date: '2025-06-26'
+        hour: '00:00'
+        timezone: 'Europe/Vilnius'
+        timestamp_local: 1750885200
+        price_unit: 'EUR/MWh'
+        data_type: 'latest_published'
+        current_time_local: '2025-06-26T00:15:30.024Z'
+        is_current_hour: true
     Error:
       type: object
+      description: 'Standard error response format'
       properties:
         success:
           type: boolean
+          description: 'Always false for error responses'
           example: false
+          default: false
         error:
           type: string
+          description: 'Human-readable error message'
           example: 'No price data found for the specified country'
         code:
           type: string
+          description: 'Machine-readable error code'
           example: 'NO_DATA_FOUND'
+          enum: ['NO_DATA_FOUND', 'INVALID_DATE_FORMAT', 'INVALID_COUNTRY', 'INVALID_PARAMETERS', 'INTERNAL_ERROR']
+        timestamp:
+          type: string
+          format: date-time
+          description: 'Error timestamp'
+          example: '2025-06-26T00:15:30.024Z'
+        path:
+          type: string
+          description: 'Request path that caused the error'
+          example: '/api/v1/nps/price/lt/latest'
+      required:
+        - success
+        - error
+        - code
+      example:
+        success: false
+        error: 'No price data found for the specified country'
+        code: 'NO_DATA_FOUND'
+        timestamp: '2025-06-26T00:15:30.024Z'
+        path: '/api/v1/nps/price/lt/latest'
 tags:
   - name: Prices
     description: 'Electricity price data endpoints'

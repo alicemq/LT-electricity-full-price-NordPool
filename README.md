@@ -32,6 +32,15 @@ docker-compose --env-file .env.production up -d --build
 docker-compose -f docker-compose.yml -f docker-compose.dev.yml --env-file .env.development up -d --build
 ```
 
+#### **CapRover Deployment (Cloud)**
+```bash
+# Prepare for CapRover deployment
+./scripts/deploy-caprover.sh
+
+# Follow the deployment instructions displayed by the script
+# Or manually deploy using the CapRover web interface
+```
+
 ### **Access the Application**
 
 #### **Production Mode**
@@ -45,6 +54,12 @@ docker-compose -f docker-compose.yml -f docker-compose.dev.yml --env-file .env.d
 - **Backend**: http://localhost:3000 (Express with hot-reload)
 - **Database**: localhost:5432
 - **Swagger UI**: http://localhost:5173/api/ (API documentation)
+
+#### **CapRover Deployment**
+- **Frontend**: https://your-app-name.your-domain.com
+- **API**: https://your-app-name.your-domain.com/api/v1/
+- **Swagger UI**: https://your-app-name.your-domain.com/api/
+- **Health Check**: https://your-app-name.your-domain.com/api/v1/health
 
 ## 📊 **System Overview**
 
@@ -221,13 +236,103 @@ GET /api/openapi.yaml                 // OpenAPI specification
 
 ## 🔮 **Future Enhancements**
 
-### **Planned Features**
-- PWA (Progressive Web App) with offline support
-- Push notifications for price alerts
-- Admin panel for data management
-- TypeScript migration for type safety
-- Advanced analytics and reporting
-- Enhanced Swagger UI integration
+### **High Priority**
+- [x] **Enhanced Swagger UI Integration - COMPLETED**
+  - [x] Complete OpenAPI specification documentation
+  - [x] Interactive API testing interface
+  - [x] Auto-generated client SDKs
+  - [x] Production-ready integration
+  - [x] Enhanced documentation with rich descriptions
+
+- [ ] **PWA Features**
+  - [ ] Service worker for offline functionality
+  - [ ] App-like installation experience
+  - [ ] Background data sync
+  - [ ] Push notifications for price alerts
+  - [ ] Offline data caching
+
+- [ ] **Push Notifications**
+  - [ ] Price alerts for expensive periods
+  - [ ] Daily price summaries
+  - [ ] System maintenance notifications
+  - [ ] Custom alert thresholds
+  - [ ] Notification preferences
+
+### **Medium Priority**
+- [ ] **Admin Panel**
+  - [ ] Data management interface
+  - [ ] Sync monitoring dashboard
+  - [ ] System configuration
+  - [ ] User management
+  - [ ] Analytics dashboard
+
+- [ ] **Advanced Analytics**
+  - [ ] Price trend analysis
+  - [ ] Usage statistics
+  - [ ] Performance metrics
+  - [ ] Historical data visualization
+  - [ ] Price forecasting models
+
+- [ ] **TypeScript Migration**
+  - [ ] Type safety for all components
+  - [ ] Better development experience
+  - [ ] Reduced runtime errors
+  - [ ] Enhanced IDE support
+  - [ ] Strict type checking
+
+### **Low Priority**
+- [ ] **API Rate Limiting**
+  - [ ] Implement rate limiting for public API
+  - [ ] API key authentication
+  - [ ] Usage tracking and quotas
+  - [ ] Rate limit headers
+
+- [ ] **GraphQL API**
+  - [ ] GraphQL endpoint for flexible queries
+  - [ ] Real-time subscriptions
+  - [ ] Schema introspection
+  - [ ] GraphQL playground
+
+- [ ] **Mobile App**
+  - [ ] React Native mobile application
+  - [ ] Native push notifications
+  - [ ] Offline data storage
+  - [ ] Mobile-optimized UI
+
+- [ ] **Machine Learning Integration**
+  - [ ] Price prediction models
+  - [ ] Anomaly detection
+  - [ ] Pattern recognition
+  - [ ] Automated insights
+
+## 📊 **SDK Generation**
+
+### **Available Client SDKs**
+The system includes an automated SDK generation script that creates client libraries for multiple programming languages:
+
+```bash
+# Generate all SDKs
+./scripts/generate-sdks.sh
+
+# Generated SDKs will be available in:
+# - generated-sdks/javascript/
+# - generated-sdks/typescript/
+# - generated-sdks/python/
+# - generated-sdks/java/
+# - generated-sdks/csharp/
+# - generated-sdks/go/
+# - generated-sdks/php/
+```
+
+### **Supported Languages**
+- [x] **JavaScript/TypeScript** - Full type safety and Promise-based API
+- [x] **Python** - Native Python client with type hints
+- [x] **Java** - Maven-ready Java client library
+- [x] **C#** - .NET client with async/await support
+- [x] **Go** - Native Go client with context support
+- [x] **PHP** - Composer-ready PHP client
+- [ ] **Rust** - Native Rust client (planned)
+- [ ] **Swift** - iOS/macOS client (planned)
 
 ## 📞 **Support**
 
