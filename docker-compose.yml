@@ -1,0 +1,119 @@
+version: '3.8'
+
+services:
+  # Database service
+  db:
+    image: postgres:15-alpine
+    container_name: electricity_db
+    environment:
+      POSTGRES_DB: electricity_prices
+      POSTGRES_USER: electricity_user
+      POSTGRES_PASSWORD: electricity_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    networks:
+      - electricity_network
+    restart: unless-stopped
+
+  # Backend API service
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        NODE_ENV: ${NODE_ENV:-production}
+    container_name: electricity_backend
+    environment:
+      DATABASE_URL: postgresql://electricity_user:electricity_password@db:5432/electricity_prices
+      NODE_ENV: ${NODE_ENV:-production}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+    networks:
+      - electricity_network
+    restart: unless-stopped
+    command: ${BACKEND_COMMAND:-node src/index.js}
+
+  # Frontend service
+  frontend:
+    build:
+      context: ./electricity-prices-build
+      dockerfile: Dockerfile
+      args:
+        NODE_ENV: ${NODE_ENV:-production}
+      target: ${NODE_ENV:-production}
+    container_name: electricity_frontend
+    volumes:
+      - ./electricity-prices-build:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:3000/api}
+      NODE_ENV: ${NODE_ENV:-production}
+    depends_on:
+      - backend
+    networks:
+      - electricity_network
+    restart: unless-stopped
+    command: ${FRONTEND_COMMAND:-npm run dev -- --host 0.0.0.0}
+
+  # Data sync service (for fetching from Elering API)
+  data-sync:
+    build:
+      context: ./data-sync
+      dockerfile: Dockerfile
+      args:
+        NODE_ENV: ${NODE_ENV:-production}
+    container_name: electricity_data_sync
+    environment:
+      DATABASE_URL: postgresql://electricity_user:electricity_password@db:5432/electricity_prices
+      ELERING_API_URL: https://dashboard.elering.ee/api/nps/price
+      NODE_ENV: ${NODE_ENV:-production}
+    volumes:
+      - ./data-sync:/app
+      - /app/node_modules
+    depends_on:
+      - db
+    networks:
+      - electricity_network
+    restart: unless-stopped
+    command: ${DATA_SYNC_COMMAND:-node src/sync.js}
+
+  # Worker service for automated daily syncs
+  worker:
+    build:
+      context: ./data-sync
+      dockerfile: Dockerfile
+      args:
+        NODE_ENV: ${NODE_ENV:-production}
+    container_name: electricity_worker
+    environment:
+      DATABASE_URL: postgresql://electricity_user:electricity_password@db:5432/electricity_prices
+      ELERING_API_URL: https://dashboard.elering.ee/api/nps/price
+      NODE_ENV: ${NODE_ENV:-production}
+    volumes:
+      - ./data-sync:/app
+      - /app/node_modules
+    depends_on:
+      - db
+      - data-sync
+    networks:
+      - electricity_network
+    restart: unless-stopped
+    command: ${WORKER_COMMAND:-node src/worker.js}
+
+volumes:
+  postgres_data:
+
+networks:
+  electricity_network:
+    driver: bridge 
