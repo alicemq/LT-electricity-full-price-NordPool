@@ -6,7 +6,7 @@ A modern, containerized electricity price monitoring system for Baltic countries
 
 ### **Prerequisites**
 - Docker and Docker Compose
-- Node.js 18+ (for development)
+- Node.js 20+ (for development)
 
 ### **Start the System**
 
@@ -65,8 +65,8 @@ docker-compose -f docker-compose.yml -f docker-compose.dev.yml --env-file .env.d
 
 ### **Architecture**
 - **Frontend**: Vue.js 3 application with Nginx proxy
-- **Backend**: Node.js/Express API with integrated cron jobs
-- **Database**: PostgreSQL with DST-aware timestamps
+- **Backend**: Node.js 20/Express API with integrated cron jobs
+- **Database**: PostgreSQL 16 with DST-aware timestamps
 - **Swagger UI**: Interactive API documentation
 
 ### **Security Architecture**
@@ -87,22 +87,26 @@ docker-compose -f docker-compose.yml -f docker-compose.dev.yml --env-file .env.d
 - ✅ **Secure production architecture** with proxy routing
 - ✅ **Interactive API documentation** with Swagger UI
 - ✅ **Smart startup sync** with last run time tracking
+- ✅ **Simplified architecture** with integrated cron jobs
+- ✅ **Node.js 20 compatibility** with latest dependencies
+- ✅ **PostgreSQL 16** with stable performance
 
 ## 🔧 **Services**
 
-### **Database (PostgreSQL)**
+### **Database (PostgreSQL 16)**
 - Stores historical price data with proper indexing
 - DST-aware timestamp handling
 - Sync logs and system configuration
 - **Production**: Internal only, not exposed to internet
 
-### **Backend API (Node.js/Express)**
+### **Backend API (Node.js 20/Express)**
 - RESTful API endpoints for price data
 - DST conversion for user-friendly display
 - Error handling and validation
 - **Integrated cron jobs** for automated data synchronization
 - **Startup sync checks** to ensure data freshness
 - **Manual sync triggers** via API endpoints
+- **Last run time tracking** for efficient sync management
 - **Production**: Internal only, accessed via frontend proxy
 
 ### **Frontend (Vue.js 3 + Nginx)**
@@ -230,6 +234,8 @@ GET /api/openapi.yaml                 // OpenAPI specification
                        │   Port: 3000    │
                        │   + Cron Jobs   │
                        │   + Sync Logic  │
+                       │   + Last Run    │
+                       │     Tracking    │
                        └─────────────────┘
                                 │
                                 ▼
@@ -237,6 +243,7 @@ GET /api/openapi.yaml                 // OpenAPI specification
                        │   Database      │
                        │   (Internal)    │
                        │   Port: 5432    │
+                       │   PostgreSQL 16 │
                        └─────────────────┘
 ```
 
@@ -246,7 +253,7 @@ GET /api/openapi.yaml                 // OpenAPI specification
 │   Frontend      │    │   Backend API   │    │   Database      │
 │   (Vite)        │◄──►│   (Express)     │◄──►│   (PostgreSQL)  │
 │   Port: 5173    │    │   Port: 3000    │    │   Port: 5432    │
-│                 │    │   + Cron Jobs   │    │                 │
+│   Node.js 20    │    │   + Cron Jobs   │    │   PostgreSQL 16 │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
@@ -266,6 +273,19 @@ GET /api/openapi.yaml                 // OpenAPI specification
   - [x] Added startup sync checks with last run time tracking
   - [x] Integrated manual sync triggers via API
   - [x] Reduced from 6 to 4 containers
+  - [x] Added comprehensive CLI commands for sync management
+
+- [x] **Node.js 20 Upgrade - COMPLETED**
+  - [x] Updated all Dockerfiles to use Node.js 20
+  - [x] Fixed Vite compatibility issues
+  - [x] Resolved crypto.hash errors
+  - [x] Updated all dependencies to latest compatible versions
+
+- [x] **PostgreSQL 16 Upgrade - COMPLETED**
+  - [x] Updated to stable PostgreSQL 16-alpine image
+  - [x] Fixed version compatibility issues
+  - [x] Ensured database initialization compatibility
+  - [x] Maintained all existing data and schema
 
 - [ ] **PWA Features**
   - [ ] Service worker for offline functionality
@@ -424,8 +444,11 @@ docker-compose -f docker-compose.yml -f docker-compose.dev.yml restart [service-
 - ✅ **Development-friendly setup** with hot-reload and debugging
 - ✅ **Interactive API documentation** with Swagger UI integration
 - ✅ **Simplified architecture** with integrated cron jobs and smart startup sync
+- ✅ **Node.js 20 upgrade** with latest dependencies and Vite compatibility
+- ✅ **PostgreSQL 16 upgrade** with stable performance and compatibility
+- ✅ **Comprehensive CLI tools** for sync management and monitoring
 
 ---
 
 **Status**: ✅ Production Ready  
-**Last Updated**: June 2024
+**Last Updated**: December 2024
