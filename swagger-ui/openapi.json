@@ -45,7 +45,7 @@
                     "system": {
                       "type": "object"
                     },
-                    "database": {
+                        "database": {
                       "type": "object"
                     },
                     "sync": {
@@ -62,7 +62,7 @@
                       "items": {
                         "type": "object"
                       }
-                    },
+                        },
                     "issues": {
                       "type": "array",
                       "items": {
@@ -79,7 +79,7 @@
                     "nodeVersion": "v20.19.3",
                     "platform": "linux",
                     "uptime": "12 hours"
-                  },
+                        },
                   "database": {
                     "connected": true,
                     "uptime": "1 day",
@@ -101,7 +101,7 @@
                     {
                       "name": "All Countries NordPool Sync",
                       "schedule": "30,0 12-17 * * *"
-                    }
+                        }
                   ],
                   "dataFreshness": [
                     {
@@ -110,8 +110,8 @@
                     }
                   ],
                   "issues": []
-                }
-              }
+                    }
+                  }
             }
           },
           "500": {

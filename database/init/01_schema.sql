@@ -247,7 +247,7 @@ INSERT INTO system_charges (effective_date, charge_type, amount) VALUES
 ('2024-01-01', 'distributionplus', 0.00045),
 ('2025-01-01', 'VIAP', -0.00039),
 ('2025-01-01', 'distributionplus', 0.000893)
-ON CONFLICT (effective_date, charge_type) DO NOTHING;
+ON CONFLICT (effective_date, charge_type) DO NOTHING; 
 
 -- Insert plan versions (from planVersionConfig.js)
 INSERT INTO plan_versions (effective_date, zone_name, plan_name) VALUES

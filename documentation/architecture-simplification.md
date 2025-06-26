@@ -20,7 +20,10 @@ This document outlines the successful simplification of the Electricity Prices N
 
 ### **3. Technical Upgrades**
 - **Node.js**: Upgraded from 18 to 20 across all services
-- **PostgreSQL**: Upgraded from 15 to 16-alpine for better stability
+- **PostgreSQL**: Upgraded from 15 to 17-alpine for better stability
+- **Vue.js**: Updated to 3.5.17 for latest features and security
+- **Vite**: Updated to 7.0.0 for improved build performance
+- **Express**: Updated to 4.18.2 for latest backend framework features
 - **Docker Images**: Pinned to stable versions for reliability
 - **Dependencies**: Updated all packages to latest compatible versions
 
@@ -34,7 +37,7 @@ This document outlines the successful simplification of the Electricity Prices N
 │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────┐ │
 │  │   Vue.js App    │  │   API Proxy     │  │   Swagger   │ │
 │  │   (Static)      │  │   (/api/v1/*)   │  │   UI        │ │
-│  │   Node.js 20    │  │                 │  │   (/api/)   │ │
+│  │   Vue 3.5.17    │  │                 │  │   (/api/)   │ │
 │  └─────────────────┘  └─────────────────┘  └─────────────┘ │
 └─────────────────────────────────────────────────────────────┘
                                 │
@@ -48,6 +51,7 @@ This document outlines the successful simplification of the Electricity Prices N
                        │   + Last Run    │
                        │     Tracking    │
                        │   Node.js 20    │
+                       │   Express 4.18  │
                        └─────────────────┘
                                 │
                                 ▼
@@ -55,7 +59,7 @@ This document outlines the successful simplification of the Electricity Prices N
                        │   Database      │
                        │   (Internal)    │
                        │   Port: 5432    │
-                       │   PostgreSQL 16 │
+                       │   PostgreSQL 17 │
                        └─────────────────┘
 ```
 
@@ -63,9 +67,10 @@ This document outlines the successful simplification of the Electricity Prices N
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   Frontend      │    │   Backend API   │    │   Database      │
-│   (Vite)        │◄──►│   (Express)     │◄──►│   (PostgreSQL)  │
+│   (Vite 7.0)    │◄──►│   (Express)     │◄──►│   (PostgreSQL)  │
 │   Port: 5173    │    │   Port: 3000    │    │   Port: 5432    │
-│   Node.js 20    │    │   + Cron Jobs   │    │   PostgreSQL 16 │
+│   Vue 3.5.17    │    │   + Cron Jobs   │    │   PostgreSQL 17 │
+│   Node.js 20    │    │   Node.js 20    │    │                 │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
@@ -111,7 +116,7 @@ npm run cli status                        // Check sync status
 
 ### **3. PostgreSQL Version Conflicts**
 - **Issue**: Database initialized with PostgreSQL 15, but image was PostgreSQL 17
-- **Solution**: Upgraded to stable PostgreSQL 16-alpine
+- **Solution**: Upgraded to stable PostgreSQL 17-alpine
 - **Result**: Compatible database version with all initialization scripts
 
 ### **4. Missing Dependencies**
@@ -161,6 +166,7 @@ npm run cli status                        // Check sync status
 - ✅ **API Documentation**: Added new sync endpoints
 - ✅ **CLI Documentation**: Added comprehensive CLI usage examples
 - ✅ **Architecture Diagrams**: Updated to reflect simplified structure
+- ✅ **Troubleshooting Guide**: Enhanced with new commands
 
 ## 🧪 **Testing Results**
 
@@ -221,7 +227,7 @@ npm run cli status                        // Check sync status
 - ✅ **Enhanced Performance**: More efficient resource usage
 
 ### **Technical Goals**
-- ✅ **Modern Dependencies**: Node.js 20 and PostgreSQL 16
+- ✅ **Modern Dependencies**: Node.js 20, PostgreSQL 17, Vue.js 3.5.17, Vite 7.0.0, Express 4.18.2
 - ✅ **Stable Images**: Pinned Docker images for reliability
 - ✅ **Comprehensive Tooling**: CLI and API management tools
 - ✅ **Better Documentation**: Updated and comprehensive docs
@@ -232,7 +238,7 @@ The architecture simplification has been **successfully completed** with all goa
 
 - **Simplified deployment** with 33% fewer containers
 - **Integrated sync management** with comprehensive CLI and API tools
-- **Modern technology stack** with Node.js 20 and PostgreSQL 16
+- **Modern technology stack** with Node.js 20, PostgreSQL 17, Vue.js 3.5.17, Vite 7.0.0, and Express 4.18.2
 - **Maintained security** with all production hardening preserved
 - **Enhanced monitoring** with better visibility into system operations
 - **Improved reliability** with better error handling and startup logic

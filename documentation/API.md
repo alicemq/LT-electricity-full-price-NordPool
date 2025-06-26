@@ -486,6 +486,25 @@ For interactive API documentation and testing, visit:
 
 The Swagger UI provides a complete interactive interface for testing all endpoints.
 
+## Technology Stack
+
+### Backend
+- **Node.js**: 20 (LTS)
+- **Express**: 4.18.2
+- **PostgreSQL**: 17 (Database)
+- **node-cron**: 3.0.3 (Scheduling)
+- **axios**: 1.6.0 (HTTP client)
+- **pg**: 8.11.3 (PostgreSQL client)
+
+### Frontend
+- **Vue.js**: 3.5.17
+- **Vite**: 7.0.0 (Build tool)
+- **Nginx**: stable-alpine (Production proxy)
+
+### Infrastructure
+- **Docker**: Containerized deployment
+- **Swagger UI**: Interactive API documentation
+
 ---
 
 **API Version**: 2.0.0  
