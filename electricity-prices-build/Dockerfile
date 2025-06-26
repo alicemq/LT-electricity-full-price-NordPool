@@ -1,4 +1,4 @@
-FROM node:18-alpine AS build
+FROM node:20-alpine AS build
 
 WORKDIR /app
 
@@ -18,7 +18,7 @@ COPY . .
 RUN npm run build
 
 # Development stage (for hot-reload)
-FROM node:18-alpine AS development
+FROM node:20-alpine AS development
 
 WORKDIR /app
 
@@ -42,7 +42,7 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
 
 # Production stage
-FROM nginx:alpine AS production
+FROM nginx:stable-alpine AS production
 
 # Copy built application from build stage
 COPY --from=build /app/dist /usr/share/nginx/html

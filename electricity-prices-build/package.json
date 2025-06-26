@@ -10,22 +10,22 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@vuepic/vue-datepicker": "^9.0.3",
-    "@vueuse/core": "^11.1.0",
-    "axios": "^1.7.7",
-    "bootstrap": "^5.3.3",
-    "jquery": "^3.7.1",
-    "lessc": "^1.0.2",
-    "moment-timezone": "^0.5.46",
-    "openmeteo": "^1.1.4",
-    "pinia": "^2.2.4",
-    "vue": "^3.5.12",
-    "vue-router": "^4.4.5"
+    "@vuepic/vue-datepicker": "11.0.2",
+    "@vueuse/core": "13.4.0",
+    "axios": "1.10.0",
+    "bootstrap": "5.3.7",
+    "jquery": "3.7.1",
+    "lessc": "1.0.2",
+    "moment-timezone": "0.6.0",
+    "openmeteo": "1.2.0",
+    "pinia": "3.0.3",
+    "vue": "3.5.17",
+    "vue-router": "4.5.1"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "^5.1.4",
-    "sass-embedded": "^1.80.3",
-    "vite": "^5.4.9",
-    "vite-plugin-vue-devtools": "^7.4.6"
+    "@vitejs/plugin-vue": "6.0.0",
+    "sass-embedded": "1.89.2",
+    "vite": "7.0.0",
+    "vite-plugin-vue-devtools": "7.7.7"
   }
 }

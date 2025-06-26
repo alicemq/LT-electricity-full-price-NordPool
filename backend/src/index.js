@@ -3,8 +3,9 @@ import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
 import moment from 'moment-timezone';
-import { getPriceData, getLatestPrice, getCurrentPrice, getAvailableCountries, getSettings, updateSetting, getCurrentHourPrice, getLatestPriceAll, getCurrentHourPriceAll } from './database.js';
+import { getPriceData, getLatestPrice, getCurrentPrice, getAvailableCountries, getSettings, updateSetting, getCurrentHourPrice, getLatestPriceAll, getCurrentHourPriceAll, getDatabaseStats, getSystemHealth } from './database.js';
 import v1Router from './v1.js';
+import { startSyncWorker, stopSyncWorker, getSyncStatus } from './syncWorker.js';
 
 dotenv.config();
 
@@ -43,25 +44,136 @@ app.use(express.json());
 // Mount v1 API router
 app.use('/api/v1', v1Router);
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
-    timestamp: new Date().toISOString(),
-    timezone: 'Europe/Vilnius'
-  });
+// Health check endpoint - comprehensive health data
+app.get('/health', async (req, res) => {
+  try {
+    const health = await getSystemHealth();
+    const stats = await getDatabaseStats();
+    const syncStatus = getSyncStatus();
+    
+    const response = {
+      success: true,
+      timestamp: new Date().toISOString(),
+      system: {
+        ...health.system,
+        uptime: Math.floor(health.system.uptime / 3600) + ' hours'
+      },
+      database: {
+        ...health.database,
+        stats: {
+          totalRecords: stats.totalRecords,
+          countries: stats.countries,
+          databaseSize: stats.databaseSize,
+          tableSizes: stats.tableSizes
+        }
+      },
+      sync: {
+        ...health.sync,
+        worker: syncStatus,
+        recentActivity: stats.recentSyncs,
+        statistics: stats.syncStats
+      },
+      scheduledJobs: syncStatus.scheduledJobs,
+      dataFreshness: health.sync.dataFreshness
+    };
+    
+    // Add overall health status
+    const isHealthy = health.database.connected && 
+                     health.sync.dataFreshness.every(country => country.isRecent) &&
+                     syncStatus.isRunning;
+    
+    response.overallStatus = isHealthy ? 'healthy' : 'degraded';
+    response.issues = [];
+    
+    if (!health.database.connected) {
+      response.issues.push('Database connection failed');
+    }
+    
+    const staleData = health.sync.dataFreshness.filter(country => !country.isRecent);
+    if (staleData.length > 0) {
+      response.issues.push(`Stale data detected: ${staleData.map(c => `${c.country.toUpperCase()} (${c.hoursOld}h old)`).join(', ')}`);
+    }
+    
+    if (!syncStatus.isRunning) {
+      response.issues.push('Sync worker not running');
+    }
+    
+    res.json(response);
+  } catch (error) {
+    console.error('Error getting health status:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get health status',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
-// API Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    services: {
-      database: 'connected',
-      api: 'running'
+// API Health check endpoint - comprehensive health data
+app.get('/api/health', async (req, res) => {
+  try {
+    const health = await getSystemHealth();
+    const stats = await getDatabaseStats();
+    const syncStatus = getSyncStatus();
+    
+    const response = {
+      success: true,
+      timestamp: new Date().toISOString(),
+      system: {
+        ...health.system,
+        uptime: Math.floor(health.system.uptime / 3600) + ' hours'
+      },
+      database: {
+        ...health.database,
+        stats: {
+          totalRecords: stats.totalRecords,
+          countries: stats.countries,
+          databaseSize: stats.databaseSize,
+          tableSizes: stats.tableSizes
+        }
+      },
+      sync: {
+        ...health.sync,
+        worker: syncStatus,
+        recentActivity: stats.recentSyncs,
+        statistics: stats.syncStats
+      },
+      scheduledJobs: syncStatus.scheduledJobs,
+      dataFreshness: health.sync.dataFreshness
+    };
+    
+    // Add overall health status
+    const isHealthy = health.database.connected && 
+                     health.sync.dataFreshness.every(country => country.isRecent) &&
+                     syncStatus.isRunning;
+    
+    response.overallStatus = isHealthy ? 'healthy' : 'degraded';
+    response.issues = [];
+    
+    if (!health.database.connected) {
+      response.issues.push('Database connection failed');
     }
-  });
+    
+    const staleData = health.sync.dataFreshness.filter(country => !country.isRecent);
+    if (staleData.length > 0) {
+      response.issues.push(`Stale data detected: ${staleData.map(c => `${c.country.toUpperCase()} (${c.hoursOld}h old)`).join(', ')}`);
+    }
+    
+    if (!syncStatus.isRunning) {
+      response.issues.push('Sync worker not running');
+    }
+    
+    res.json(response);
+  } catch (error) {
+    console.error('Error getting health status:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get health status',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 // Get available countries
@@ -436,9 +548,84 @@ app.use((req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
+const server = app.listen(PORT, async () => {
   console.log(`Backend API server running on port ${PORT}`);
   console.log(`Health check: http://localhost:${PORT}/health`);
   console.log(`API base: http://localhost:${PORT}/api`);
   console.log(`NordPool API: http://localhost:${PORT}/api/nps`);
-}); 
+  
+  // Wait for database to be ready before starting sync worker
+  await waitForDatabase();
+  
+  // Start the sync worker after server is ready
+  try {
+    console.log('Starting sync worker...');
+    await startSyncWorker();
+    console.log('Sync worker started successfully');
+  } catch (error) {
+    console.error('Failed to start sync worker:', error);
+    // Don't exit - the API server can still function without sync
+  }
+});
+
+// Wait for database to be ready
+async function waitForDatabase() {
+  const maxRetries = 30;
+  const retryDelay = 2000; // 2 seconds
+  
+  console.log('Waiting for database to be ready...');
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      // Test database connection
+      const { testConnection } = await import('./database.js');
+      const isConnected = await testConnection();
+      
+      if (isConnected) {
+        console.log(`Database connection established on attempt ${attempt}`);
+        return;
+      }
+    } catch (error) {
+      console.log(`Database connection attempt ${attempt}/${maxRetries} failed: ${error.message}`);
+    }
+    
+    if (attempt < maxRetries) {
+      console.log(`Retrying in ${retryDelay/1000} seconds...`);
+      await new Promise(resolve => setTimeout(resolve, retryDelay));
+    }
+  }
+  
+  throw new Error(`Database connection failed after ${maxRetries} attempts`);
+}
+
+// Graceful shutdown handling
+const gracefulShutdown = async (signal) => {
+  console.log(`\nReceived ${signal}. Starting graceful shutdown...`);
+  
+  try {
+    // Stop the sync worker
+    console.log('Stopping sync worker...');
+    stopSyncWorker();
+    console.log('Sync worker stopped');
+    
+    // Close the server
+    server.close(() => {
+      console.log('HTTP server closed');
+      process.exit(0);
+    });
+    
+    // Force exit after 10 seconds if graceful shutdown fails
+    setTimeout(() => {
+      console.error('Forced shutdown after timeout');
+      process.exit(1);
+    }, 10000);
+    
+  } catch (error) {
+    console.error('Error during graceful shutdown:', error);
+    process.exit(1);
+  }
+};
+
+// Handle shutdown signals
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT')); 

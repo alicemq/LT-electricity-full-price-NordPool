@@ -33,18 +33,6 @@ services:
     ports:
       - "5432:5432"  # Expose database for direct access
 
-  # Override data-sync for development
-  data-sync:
-    environment:
-      NODE_ENV: development
-    command: npm run dev
-
-  # Override worker for development
-  worker:
-    environment:
-      NODE_ENV: development
-    command: npm run dev
-
   # Swagger UI service for development (internal only)
   swagger-ui:
     # Swagger UI should not be exposed to the internet - only accessible through frontend proxy

@@ -65,10 +65,8 @@ docker-compose -f docker-compose.yml -f docker-compose.dev.yml --env-file .env.d
 
 ### **Architecture**
 - **Frontend**: Vue.js 3 application with Nginx proxy
-- **Backend**: Node.js/Express API (internal only)
+- **Backend**: Node.js/Express API with integrated cron jobs
 - **Database**: PostgreSQL with DST-aware timestamps
-- **Data Sync**: Automated service with NordPool-aware scheduling
-- **Worker**: Scheduled synchronization service
 - **Swagger UI**: Interactive API documentation
 
 ### **Security Architecture**
@@ -88,6 +86,7 @@ docker-compose -f docker-compose.yml -f docker-compose.dev.yml --env-file .env.d
 - ✅ **Historical data** from 2012-07-01 to present
 - ✅ **Secure production architecture** with proxy routing
 - ✅ **Interactive API documentation** with Swagger UI
+- ✅ **Smart startup sync** with last run time tracking
 
 ## 🔧 **Services**
 
@@ -101,6 +100,9 @@ docker-compose -f docker-compose.yml -f docker-compose.dev.yml --env-file .env.d
 - RESTful API endpoints for price data
 - DST conversion for user-friendly display
 - Error handling and validation
+- **Integrated cron jobs** for automated data synchronization
+- **Startup sync checks** to ensure data freshness
+- **Manual sync triggers** via API endpoints
 - **Production**: Internal only, accessed via frontend proxy
 
 ### **Frontend (Vue.js 3 + Nginx)**
@@ -109,16 +111,6 @@ docker-compose -f docker-compose.yml -f docker-compose.dev.yml --env-file .env.d
 - Multi-country data visualization
 - **Production**: Acts as proxy to backend API
 - **Development**: Vite dev server with proxy configuration
-
-### **Data Sync Service**
-- Manual synchronization and historical imports
-- Efficient single API calls for all countries
-- Chunked processing for large datasets
-
-### **Worker Service**
-- Automated scheduled syncs every 30 minutes (12:30-18:00 CET)
-- Weekly full sync on Sundays at 2 AM
-- NordPool clearing price announcement timing
 
 ### **Swagger UI Service**
 - Interactive API documentation and testing
@@ -130,17 +122,38 @@ docker-compose -f docker-compose.yml -f docker-compose.dev.yml --env-file .env.d
 
 ### **Manual Data Sync**
 ```bash
-# Production mode
-docker-compose run data-sync
+# Production mode - via API endpoint
+curl -X POST http://localhost/api/sync/trigger \
+  -H "Content-Type: application/json" \
+  -d '{"country": "lt", "days": 1}'
 
-# Development mode
-docker-compose -f docker-compose.yml -f docker-compose.dev.yml run data-sync
+# Development mode - via API endpoint
+curl -X POST http://localhost:3000/api/sync/trigger \
+  -H "Content-Type: application/json" \
+  -d '{"country": "all", "days": 7}'
 
-# Sync specific country
-docker-compose run data-sync lt
+# Historical sync via API
+curl -X POST http://localhost/api/sync/historical \
+  -H "Content-Type: application/json" \
+  -d '{"country": "lt", "startDate": "2024-01-01", "endDate": "2024-12-31"}'
 
-# Historical sync
-docker-compose run data-sync historical lt 2024-01-01 2024-12-31
+# Year sync via API
+curl -X POST http://localhost/api/sync/year \
+  -H "Content-Type: application/json" \
+  -d '{"country": "lt", "year": 2024}'
+
+# All historical sync via API
+curl -X POST http://localhost/api/sync/all-historical \
+  -H "Content-Type: application/json" \
+  -d '{"country": "lt"}'
+
+# CLI usage (inside backend container)
+docker-compose exec backend npm run cli all 7
+docker-compose exec backend npm run cli historical lt 2024-01-01 2024-12-31
+docker-compose exec backend npm run cli year 2024 lt
+docker-compose exec backend npm run cli all-historical lt
+docker-compose exec backend npm run cli test
+docker-compose exec backend npm run cli status
 ```
 
 ### **Development Mode**
@@ -171,6 +184,11 @@ GET /api/v1/nps/price/ALL/current     // Current hour prices for all countries
 GET /api/v1/latest                    // Latest available prices
 GET /api/v1/countries                 // Available countries
 GET /api/v1/health                    // System health check
+GET /api/sync/status                  // Sync worker status
+POST /api/sync/trigger                // Manual sync trigger
+POST /api/sync/historical             // Historical data sync
+POST /api/sync/year                   // Year data sync
+POST /api/sync/all-historical         // All historical data sync
 GET /api/                             // Swagger UI documentation
 GET /api/openapi.yaml                 // OpenAPI specification
 ```
@@ -183,6 +201,7 @@ GET /api/openapi.yaml                 // OpenAPI specification
 - **Speed**: 672 records processed in 478ms (1.4 records/ms)
 - **Efficiency**: Single API call for all 4 countries
 - **Reliability**: 100% success rate with proper error handling
+- **Smart startup**: Checks last sync time and runs catch-up if needed
 
 ### **API Performance**
 - **Response Time**: < 100ms for typical queries
@@ -192,7 +211,7 @@ GET /api/openapi.yaml                 // OpenAPI specification
 
 ## 🏗 **Architecture**
 
-### **Production Architecture (Secure)**
+### **Production Architecture (Simplified & Secure)**
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    Frontend (Nginx)                        │
@@ -209,6 +228,8 @@ GET /api/openapi.yaml                 // OpenAPI specification
                        │   Backend API   │
                        │   (Internal)    │
                        │   Port: 3000    │
+                       │   + Cron Jobs   │
+                       │   + Sync Logic  │
                        └─────────────────┘
                                 │
                                 ▼
@@ -225,13 +246,8 @@ GET /api/openapi.yaml                 // OpenAPI specification
 │   Frontend      │    │   Backend API   │    │   Database      │
 │   (Vite)        │◄──►│   (Express)     │◄──►│   (PostgreSQL)  │
 │   Port: 5173    │    │   Port: 3000    │    │   Port: 5432    │
+│                 │    │   + Cron Jobs   │    │                 │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
-                                ▲                       ▲
-                                │                       │
-                       ┌─────────────────┐    ┌─────────────────┐
-                       │   Data Sync     │    │   Worker        │
-                       │   (Manual)      │    │   (Automated)   │
-                       └─────────────────┘    └─────────────────┘
 ```
 
 ## 🔮 **Future Enhancements**
@@ -243,6 +259,13 @@ GET /api/openapi.yaml                 // OpenAPI specification
   - [x] Auto-generated client SDKs
   - [x] Production-ready integration
   - [x] Enhanced documentation with rich descriptions
+
+- [x] **Simplified Architecture - COMPLETED**
+  - [x] Moved cron jobs to backend service
+  - [x] Removed redundant data-sync and worker containers
+  - [x] Added startup sync checks with last run time tracking
+  - [x] Integrated manual sync triggers via API
+  - [x] Reduced from 6 to 4 containers
 
 - [ ] **PWA Features**
   - [ ] Service worker for offline functionality
@@ -341,6 +364,7 @@ The system includes an automated SDK generation script that creates client libra
 - API response times and error rates
 - Container health and resource usage
 - Proxy performance metrics
+- Sync worker status and last run times
 
 ### **Troubleshooting**
 
@@ -351,6 +375,14 @@ docker-compose ps
 
 # View service logs
 docker-compose logs -f
+
+# Check sync status
+curl http://localhost/api/sync/status
+
+# Trigger manual sync
+curl -X POST http://localhost/api/sync/trigger \
+  -H "Content-Type: application/json" \
+  -d '{"country": "all", "days": 1}'
 
 # Restart services
 docker-compose restart [service-name]
@@ -366,6 +398,9 @@ docker-compose -f docker-compose.yml -f docker-compose.dev.yml ps
 
 # View service logs
 docker-compose -f docker-compose.yml -f docker-compose.dev.yml logs -f
+
+# Check sync status
+curl http://localhost:3000/api/sync/status
 
 # Restart services
 docker-compose -f docker-compose.yml -f docker-compose.dev.yml restart [service-name]
@@ -388,6 +423,7 @@ docker-compose -f docker-compose.yml -f docker-compose.dev.yml restart [service-
 - ✅ **Secure production architecture** with frontend proxy routing
 - ✅ **Development-friendly setup** with hot-reload and debugging
 - ✅ **Interactive API documentation** with Swagger UI integration
+- ✅ **Simplified architecture** with integrated cron jobs and smart startup sync
 
 ---
 

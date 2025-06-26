@@ -21,43 +21,105 @@
   "paths": {
     "/health": {
       "get": {
-        "summary": "Health check",
-        "description": "Check if the API is running",
+        "summary": "Comprehensive health check",
+        "description": "Returns system health, database statistics, sync status, scheduled jobs, and chunked sync progress. Useful for monitoring and diagnostics.",
         "tags": ["Health"],
         "responses": {
           "200": {
-            "description": "API is healthy",
+            "description": "System health and status",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "status": {
-                      "type": "string",
-                      "example": "healthy"
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "overallStatus": {
+                      "type": "string"
                     },
                     "timestamp": {
                       "type": "string",
                       "format": "date-time"
                     },
-                    "services": {
-                      "type": "object",
-                      "properties": {
-                        "database": {
-                          "type": "string",
-                          "example": "connected"
-                        },
-                        "api": {
-                          "type": "string",
-                          "example": "running"
-                        },
-                        "version": {
-                          "type": "string",
-                          "example": "v1"
-                        }
+                    "system": {
+                      "type": "object"
+                    },
+                    "database": {
+                      "type": "object"
+                    },
+                    "sync": {
+                      "type": "object"
+                    },
+                    "scheduledJobs": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    },
+                    "dataFreshness": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    },
+                    "issues": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
                       }
                     }
                   }
+                },
+                "example": {
+                  "success": true,
+                  "overallStatus": "healthy",
+                  "timestamp": "2025-06-26T21:25:01.094Z",
+                  "system": {
+                    "nodeVersion": "v20.19.3",
+                    "platform": "linux",
+                    "uptime": "12 hours"
+                  },
+                  "database": {
+                    "connected": true,
+                    "uptime": "1 day",
+                    "activeConnections": 5,
+                    "stats": {
+                      "totalRecords": 123456
+                    }
+                  },
+                  "sync": {
+                    "initialSync": {
+                      "isComplete": true
+                    },
+                    "lastSync": {
+                      "sync_type": "initial_sync",
+                      "status": "completed"
+                    }
+                  },
+                  "scheduledJobs": [
+                    {
+                      "name": "All Countries NordPool Sync",
+                      "schedule": "30,0 12-17 * * *"
+                    }
+                  ],
+                  "dataFreshness": [
+                    {
+                      "country": "lt",
+                      "isRecent": true
+                    }
+                  ],
+                  "issues": []
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Failed to get health status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
                 }
               }
             }
@@ -503,6 +565,114 @@
           }
         }
       }
+    },
+    "/sync/reset-initial": {
+      "post": {
+        "summary": "Reset initial sync status",
+        "description": "Clears the initial sync completion and last chunk markers in the database. Use this endpoint to force the backend to re-run the initial sync on next startup. Intended for testing and maintenance.",
+        "tags": ["Sync"],
+        "responses": {
+          "200": {
+            "description": "Initial sync status reset successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "example": {
+                  "success": true,
+                  "message": "Initial sync status reset successfully. Restart the backend to trigger initial sync."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Failed to reset initial sync status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sync/initial-status": {
+      "get": {
+        "summary": "Get initial sync status",
+        "description": "Returns the current status of the initial sync process, including whether it is complete, the last completed date, record count, and any errors. The initial sync is performed in chunks, and only marked complete when the final chunk (up to today) is finished.",
+        "tags": ["Sync"],
+        "responses": {
+          "200": {
+            "description": "Initial sync status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "isComplete": {
+                          "type": "boolean"
+                        },
+                        "completedDate": {
+                          "type": "string",
+                          "format": "date"
+                        },
+                        "recordsCount": {
+                          "type": "integer"
+                        },
+                        "completedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "lastError": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "success": true,
+                  "data": {
+                    "isComplete": true,
+                    "completedDate": "2025-06-29",
+                    "recordsCount": 123456,
+                    "completedAt": "2025-06-26T21:20:21.088Z",
+                    "lastError": null
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Failed to get initial sync status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -595,5 +765,23 @@
         }
       }
     }
-  }
+  },
+  "tags": [
+    {
+      "name": "Prices",
+      "description": "Electricity price data endpoints"
+    },
+    {
+      "name": "Health",
+      "description": "System health and status endpoints"
+    },
+    {
+      "name": "Countries",
+      "description": "Country information endpoints"
+    },
+    {
+      "name": "Sync",
+      "description": "Data synchronization and management endpoints"
+    }
+  ]
 }

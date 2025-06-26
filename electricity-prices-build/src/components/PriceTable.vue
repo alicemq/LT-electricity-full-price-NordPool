@@ -62,7 +62,7 @@ const isCurrentHourClass = (timestamp) => {
 
 <template>
   <div v-if="!hasEnoughData" class="alert alert-warning" role="alert">
-    Price data is not yet available for selected date.
+    Price data is not yet available for selected date.<br>Data is typically available after 15:00 local time (13:00 UTC).
   </div>
   <div class="table-responsive">
     <table class="table table-hover align-middle">

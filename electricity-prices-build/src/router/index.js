@@ -30,6 +30,14 @@ const router = createRouter({
       path: '/upcoming',
       name: 'upcoming',
       component: () => import('../views/UpcomingPricesView.vue')
+    },
+    {
+      path: '/status',
+      name: 'status',
+      component: () => import('../views/StatusView.vue'),
+      meta: {
+        title: 'System Status'
+      }
     }
   ]
 })

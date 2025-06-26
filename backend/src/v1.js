@@ -1,6 +1,8 @@
 import express from 'express';
 import moment from 'moment-timezone';
-import { getPriceData, getLatestPrice, getCurrentPrice, getAvailableCountries, getSettings, updateSetting, getCurrentHourPrice, getLatestPriceAll, getCurrentHourPriceAll } from './database.js';
+import syncWorker from './syncWorker.js';
+import { getPriceData, getLatestPrice, getCurrentPrice, getAvailableCountries, getSettings, updateSetting, getCurrentHourPrice, getLatestPriceAll, getCurrentHourPriceAll, getLatestTimestamp, logSync, getAllEarliestTimestamps, getInitialSyncStatus, getDatabaseStats, getSystemHealth } from './database.js';
+import pool from './database.js';
 
 const router = express.Router();
 
@@ -376,6 +378,355 @@ router.get('/configurations', async (req, res) => {
   } catch (error) {
     console.error('Error fetching configurations:', error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Enhanced sync endpoints
+router.post('/api/v1/sync/historical', async (req, res) => {
+  try {
+    const { startDate, endDate, country = 'lt' } = req.body;
+    
+    if (!startDate || !endDate) {
+      return res.status(400).json({ 
+        error: 'startDate and endDate are required' 
+      });
+    }
+    
+    console.log(`[API] Historical sync requested: ${country} from ${startDate} to ${endDate}`);
+    const records = await syncWorker.syncHistoricalData(startDate, endDate, country);
+    
+    res.json({ 
+      success: true, 
+      message: `Historical sync completed for ${country.toUpperCase()}`,
+      records,
+      dateRange: { startDate, endDate, country }
+    });
+  } catch (error) {
+    console.error('[API] Historical sync error:', error);
+    res.status(500).json({ 
+      error: 'Historical sync failed', 
+      details: error.message 
+    });
+  }
+});
+
+router.post('/api/v1/sync/year', async (req, res) => {
+  try {
+    const { year, country = 'lt' } = req.body;
+    
+    if (!year) {
+      return res.status(400).json({ 
+        error: 'year is required' 
+      });
+    }
+    
+    console.log(`[API] Year sync requested: ${country} for year ${year}`);
+    const records = await syncWorker.syncYearData(year, country);
+    
+    res.json({ 
+      success: true, 
+      message: `Year sync completed for ${country.toUpperCase()} ${year}`,
+      records,
+      year,
+      country
+    });
+  } catch (error) {
+    console.error('[API] Year sync error:', error);
+    res.status(500).json({ 
+      error: 'Year sync failed', 
+      details: error.message 
+    });
+  }
+});
+
+router.post('/api/v1/sync/years', async (req, res) => {
+  try {
+    const { startYear, endYear, country = 'lt' } = req.body;
+    
+    if (!startYear || !endYear) {
+      return res.status(400).json({ 
+        error: 'startYear and endYear are required' 
+      });
+    }
+    
+    console.log(`[API] Year range sync requested: ${country} from ${startYear} to ${endYear}`);
+    const records = await syncWorker.syncYearRange(startYear, endYear, country);
+    
+    res.json({ 
+      success: true, 
+      message: `Year range sync completed for ${country.toUpperCase()}`,
+      records,
+      yearRange: { startYear, endYear, country }
+    });
+  } catch (error) {
+    console.error('[API] Year range sync error:', error);
+    res.status(500).json({ 
+      error: 'Year range sync failed', 
+      details: error.message 
+    });
+  }
+});
+
+router.post('/api/v1/sync/all-historical', async (req, res) => {
+  try {
+    const { country = 'lt' } = req.body;
+    
+    console.log(`[API] All historical sync requested: ${country}`);
+    const records = await syncWorker.syncAllHistoricalData(country);
+    
+    res.json({ 
+      success: true, 
+      message: `All historical sync completed for ${country.toUpperCase()}`,
+      records,
+      country,
+      note: 'This syncs all data from 2012-07-01 to today'
+    });
+  } catch (error) {
+    console.error('[API] All historical sync error:', error);
+    res.status(500).json({ 
+      error: 'All historical sync failed', 
+      details: error.message 
+    });
+  }
+});
+
+router.post('/api/v1/sync/efficient', async (req, res) => {
+  try {
+    console.log('[API] Efficient sync requested for all countries');
+    const records = await syncWorker.syncAllCountriesEfficient();
+    
+    res.json({ 
+      success: true, 
+      message: 'Efficient sync completed for all countries',
+      records,
+      countries: ['lt', 'ee', 'lv', 'fi']
+    });
+  } catch (error) {
+    console.error('[API] Efficient sync error:', error);
+    res.status(500).json({ 
+      error: 'Efficient sync failed', 
+      details: error.message 
+    });
+  }
+});
+
+router.post('/api/v1/sync/all-countries-historical', async (req, res) => {
+  try {
+    const { startDate, endDate } = req.body;
+    
+    if (!startDate || !endDate) {
+      return res.status(400).json({ 
+        error: 'startDate and endDate are required' 
+      });
+    }
+    
+    console.log(`[API] All countries historical sync requested: ${startDate} to ${endDate}`);
+    const records = await syncWorker.syncAllCountriesHistorical(startDate, endDate);
+    
+    res.json({ 
+      success: true, 
+      message: `All countries historical sync completed`,
+      records,
+      dateRange: { startDate, endDate },
+      countries: ['lt', 'ee', 'lv', 'fi'],
+      note: 'This syncs data for all countries in parallel using efficient API calls'
+    });
+  } catch (error) {
+    console.error('[API] All countries historical sync error:', error);
+    res.status(500).json({ 
+      error: 'All countries historical sync failed', 
+      details: error.message 
+    });
+  }
+});
+
+router.post('/api/v1/sync/all-countries-all-historical', async (req, res) => {
+  try {
+    console.log(`[API] All countries all historical sync requested (2012-07-01 to today)`);
+    const records = await syncWorker.syncAllCountriesHistorical('2012-07-01', moment().format('YYYY-MM-DD'));
+    
+    res.json({ 
+      success: true, 
+      message: `All countries all historical sync completed`,
+      records,
+      dateRange: { startDate: '2012-07-01', endDate: moment().format('YYYY-MM-DD') },
+      countries: ['lt', 'ee', 'lv', 'fi'],
+      note: 'This syncs all historical data for all countries from 2012-07-01 to today'
+    });
+  } catch (error) {
+    console.error('[API] All countries all historical sync error:', error);
+    res.status(500).json({ 
+      error: 'All countries all historical sync failed', 
+      details: error.message 
+    });
+  }
+});
+
+// Get initial sync status
+router.get('/sync/initial-status', async (req, res) => {
+  try {
+    const status = await getInitialSyncStatus();
+    res.json({
+      success: true,
+      data: status
+    });
+  } catch (error) {
+    console.error('Error getting initial sync status:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get initial sync status',
+      details: error.message
+    });
+  }
+});
+
+// Check date completeness
+router.get('/sync/date-complete/:date', async (req, res) => {
+  try {
+    const { date } = req.params;
+    
+    // Validate date format
+    if (!moment(date, 'YYYY-MM-DD', true).isValid()) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid date format. Use YYYY-MM-DD'
+      });
+    }
+    
+    const completeness = await syncWorker.isDateComplete(date);
+    res.json({
+      success: true,
+      data: completeness
+    });
+  } catch (error) {
+    console.error('Error checking date completeness:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to check date completeness',
+      details: error.message
+    });
+  }
+});
+
+// Check recent data completeness (today and yesterday)
+router.get('/sync/recent-completeness', async (req, res) => {
+  try {
+    const today = moment().format('YYYY-MM-DD');
+    const yesterday = moment().subtract(1, 'day').format('YYYY-MM-DD');
+    
+    const todayStatus = await syncWorker.isDateComplete(today);
+    const yesterdayStatus = await syncWorker.isDateComplete(yesterday);
+    
+    res.json({
+      success: true,
+      data: {
+        today: todayStatus,
+        yesterday: yesterdayStatus,
+        needsSync: !yesterdayStatus.isComplete
+      }
+    });
+  } catch (error) {
+    console.error('Error checking recent completeness:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to check recent completeness',
+      details: error.message
+    });
+  }
+});
+
+// Comprehensive health check endpoint
+router.get('/health', async (req, res) => {
+  try {
+    const health = await getSystemHealth();
+    const stats = await getDatabaseStats();
+    const syncStatus = syncWorker.getStatus();
+    
+    const response = {
+      success: true,
+      timestamp: new Date().toISOString(),
+      system: {
+        ...health.system,
+        uptime: Math.floor(health.system.uptime / 3600) + ' hours'
+      },
+      database: {
+        ...health.database,
+        stats: {
+          totalRecords: stats.totalRecords,
+          countries: stats.countries,
+          databaseSize: stats.databaseSize,
+          tableSizes: stats.tableSizes
+        }
+      },
+      sync: {
+        ...health.sync,
+        worker: syncStatus,
+        recentActivity: stats.recentSyncs,
+        statistics: stats.syncStats
+      },
+      scheduledJobs: syncStatus.scheduledJobs,
+      dataFreshness: health.sync.dataFreshness
+    };
+    
+    // Check if we're in the active period for daily sync
+    const now = moment().tz('UTC');
+    const activeStart = moment().tz('UTC').set({ hour: 12, minute: 45, second: 0, millisecond: 0 });
+    const activeEnd = moment().tz('UTC').set({ hour: 15, minute: 55, second: 0, millisecond: 0 });
+    const isInActivePeriod = now.isBetween(activeStart, activeEnd, null, '[]'); // inclusive
+    
+    // Add overall health status
+    const isHealthy = health.database.connected && 
+                     health.sync.dataFreshness.every(country => country.isRecent);
+    
+    response.overallStatus = isHealthy ? 'healthy' : 'degraded';
+    response.issues = [];
+    
+    if (!health.database.connected) {
+      response.issues.push('Database connection failed');
+    }
+    
+    const staleData = health.sync.dataFreshness.filter(country => !country.isRecent);
+    if (staleData.length > 0) {
+      response.issues.push(`Stale data detected: ${staleData.map(c => `${c.country.toUpperCase()} (${c.hoursOld}h old)`).join(', ')}`);
+    }
+    
+    // Only report sync worker issues during active period
+    if (!syncStatus.isRunning && isInActivePeriod) {
+      response.issues.push('Sync worker not running');
+    }
+    
+    res.json(response);
+  } catch (error) {
+    console.error('Error getting health status:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get health status',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Reset initial sync status (for testing)
+router.post('/sync/reset-initial', async (req, res) => {
+  try {
+    // Clear both initial sync completion and last chunk completion
+    await pool.query(`
+      DELETE FROM user_settings 
+      WHERE setting_key IN ('initial_sync_completed', 'initial_sync_last_chunk')
+    `);
+    
+    res.json({
+      success: true,
+      message: 'Initial sync status reset successfully. Restart the backend to trigger initial sync.'
+    });
+  } catch (error) {
+    console.error('Error resetting initial sync status:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to reset initial sync status',
+      details: error.message
+    });
   }
 });
 

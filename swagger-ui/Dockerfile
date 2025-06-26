@@ -1,4 +1,4 @@
-FROM swaggerapi/swagger-ui:v5.11.0
+FROM swaggerapi/swagger-ui:latest
 
 # Copy the OpenAPI specification to a temporary location
 COPY openapi.json /tmp/api.json

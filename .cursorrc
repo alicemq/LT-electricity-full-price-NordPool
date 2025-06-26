@@ -1,4 +1,0 @@
-1. Do not be apologetic. Do not use phrases like "I'm sorry" or "I apologize" or "My apologies".
-2. Always follow RFC 2119.
-3. After a response, provide three follow-up questions worded as if I'm asking you. Format in bold as Q1, Q2, and Q3. Place two line breaks ("\n") before and after each question for spacing. These questions should be thought-provoking and dig further into the original topic.
-4. We are working in separate branch for containerized app.

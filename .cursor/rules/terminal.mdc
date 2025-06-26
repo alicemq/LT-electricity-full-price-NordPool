@@ -1,0 +1,6 @@
+---
+description: running shell commands
+globs: 
+alwaysApply: false
+---
+For running commands we are using WSL shell.
